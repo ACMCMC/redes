@@ -19,7 +19,7 @@ int get_host_info(char *name)
     char *socket_addr_ip_text = NULL;    // La dirección a la que apunta el puntero anterior, como un string legible por humanos. Al principio es NULL, después usamos realloc()
     int error_check;                     // Usaremos esta variable para comprobar errores en la llamada a funciones del sistema
 
-    printf("%s ->\n", name); // Mensaje para el usuario
+    printf("****************************************************************\nNombre canónico: %s\n", name); // Mensaje para el usuario
 
     memset(&addrinfo, 0, sizeof(struct addrinfo)); // Llenamos la estructura de 0s
     addrinfo.ai_family = AF_UNSPEC;                // No buscamos una familia concreta de direcciones IP
@@ -48,12 +48,12 @@ int get_host_info(char *name)
 
         socket_addr_ip_text = (char *)realloc(socket_addr_ip_text, p_addrinfo->ai_addrlen); // Guardamos la memoria necesaria para la cadena de texto de la IP
 
-        if (inet_ntop(p_addrinfo->ai_family, (void *) socket_addr_ip, socket_addr_ip_text, p_addrinfo->ai_addrlen) == NULL)
+        if (inet_ntop(p_addrinfo->ai_family, (void *) (socket_addr_ip), socket_addr_ip_text, p_addrinfo->ai_addrlen) == NULL)
         {
             fprintf(stderr, "Error en inet_ntop: %s\n", strerror(errno));
             return (EXIT_FAILURE);
         }
-        printf("\t%s (IPv%s)\n", socket_addr_ip_text, (p_addrinfo->ai_family == AF_INET6) ? "6" : "4");
+        printf("\tDirección IPv%s: %s (%s)\n", (p_addrinfo->ai_family == AF_INET6) ? "6" : "4", socket_addr_ip_text, (p_addrinfo->ai_socktype == SOCK_STREAM) ? "SOCK_STREAM" : (p_addrinfo->ai_socktype == SOCK_DGRAM) ? "SOCK_DGRAM" : "otro tipo de socket" );
     }
 
     freeaddrinfo(result); // Libera toda la lista enlazada de structs sockaddrinfo
