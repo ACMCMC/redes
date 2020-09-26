@@ -17,7 +17,7 @@ int main(int argc, char * argv[]) {
   if (argc < 2) {
     printf("Falta un operando\n");
     printf("Usar: %s [-n Nombre del host] [-s Nombre del servicio (p.e. http)] [-i Direccion ip] [-p Numero de puerto]\n", argv[0]);
-    return (EXIT_FAILURE)
+    return (EXIT_FAILURE);
   }
 
   // La funcion getopt() permite de forma facil manejar operandos en linea de comandos
