@@ -57,7 +57,7 @@ int get_host_info(char *name)
     }
 
     freeaddrinfo(result); // Libera toda la lista enlazada de structs sockaddrinfo
-    free(socket_addr_ip_text);
+    free(socket_addr_ip_text); // También hay que liberar la cadena donde guardamos la IP
     result = NULL; // Todos estos punteros ahora apuntan a zonas de memoria basura
     p_addrinfo = NULL;
     socket_addr_struct = NULL;
