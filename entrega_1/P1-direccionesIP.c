@@ -37,7 +37,7 @@ int main(int argc, char * argv[]) {
     case 'p':
       port = optarg; // Argumento numero de puerto
       break;
-    case ':': // Se intrudujo un flag sin argumento obligatorio
+    case ':': // Se introdujo un flag sin argumento obligatorio
       fprintf(stderr, "La opción -%c requiere un argumento.\n", optopt);
       return (EXIT_FAILURE);
       break;
