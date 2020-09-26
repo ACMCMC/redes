@@ -11,13 +11,12 @@
 // Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
 int get_host_info(char *name)
 {
-    struct addrinfo addrinfo;            // Struct para encapsular los parámetros de llamada a getaddrinfo()
-    struct addrinfo *result = NULL;      // Lista enlazada de structs de tipo addrinfo
-    struct addrinfo *p_addrinfo;         // Puntero a un struct addrinfo, lo usaremos para recorrer la lista enlazada
-    struct sockaddr *socket_addr_struct; // Puntero al struct que encapsula la dirección de un socket, lo usaremos después cuando recorramos la lista
-    struct in_addr *socket_addr_ip;      // Puntero a la dirección ip del socket, lo usaremos también después
-    char *socket_addr_ip_text = NULL;    // La dirección a la que apunta el puntero anterior, como un string legible por humanos. Al principio es NULL, después usamos realloc()
-    int error_check;                     // Usaremos esta variable para comprobar errores en la llamada a funciones del sistema
+    struct addrinfo addrinfo;         // Struct para encapsular los parámetros de llamada a getaddrinfo()
+    struct addrinfo *result = NULL;   // Lista enlazada de structs de tipo addrinfo
+    struct addrinfo *p_addrinfo;      // Puntero a un struct addrinfo, lo usaremos para recorrer la lista enlazada
+    struct in_addr *socket_addr_ip;   // Puntero a la dirección ip del socket, lo usaremos también después
+    char *socket_addr_ip_text = NULL; // La dirección a la que apunta el puntero anterior, como un string legible por humanos. Al principio es NULL, después usamos realloc()
+    int error_check;                  // Usaremos esta variable para comprobar errores en la llamada a funciones del sistema
 
     printf("****************************************************************\nNombre canónico: %s\n", name); // Mensaje para el usuario
 
@@ -38,29 +37,41 @@ int get_host_info(char *name)
     if (error_check != 0)
     {                                                                         // Si hubo un error...
         fprintf(stderr, "Se tuvo el error: %s\n", gai_strerror(error_check)); // Imprimimos el error en un formato legible por personas a stderr, el error lo podemos obtener a partir del código numérico usando gai_strerror()
-        return (EXIT_FAILURE);                                                // Devolvemos EXIT_FAILURE, para indicar un error (1)
+        exit(EXIT_FAILURE);                                                   // Salimos con EXIT_FAILURE, para indicar un error
     }
 
     for (p_addrinfo = result; p_addrinfo != NULL; p_addrinfo = p_addrinfo->ai_next)
     {
-        socket_addr_struct = (struct sockaddr *)p_addrinfo->ai_addr;
-        socket_addr_ip = (struct in_addr *)&(socket_addr_struct->sa_data);
+
+        if (p_addrinfo->ai_family == AF_INET) // Si la familia de la dirección es IPv4, tenemos que castear el puntero a struct sockaddr_in
+        {
+            socket_addr_ip = (struct in_addr *)&(((struct sockaddr_in *)p_addrinfo->ai_addr)->sin_addr);
+        }
+        else if (p_addrinfo->ai_family == AF_INET6) // Si la familia de la dirección es IPv6, tenemos que castear el puntero a struct sockaddr_in6
+        {
+            socket_addr_ip = (struct in_addr *)&(((struct sockaddr_in6 *)p_addrinfo->ai_addr)->sin6_addr);
+        }
+        else // Si ai_family no es IPv4 o IPv6, no podemos castear el puntero a un tipo adecuado de struct. Lo tratamos de forma genérica
+        {
+            fprintf(stderr, "No se reconoce el valor de ai_family.\n");
+            socket_addr_ip = (struct in_addr *)&((p_addrinfo->ai_addr)->sa_data);
+        }
 
         socket_addr_ip_text = (char *)realloc(socket_addr_ip_text, p_addrinfo->ai_addrlen); // Guardamos la memoria necesaria para la cadena de texto de la IP
 
-        if (inet_ntop(p_addrinfo->ai_family, (void *) (socket_addr_ip), socket_addr_ip_text, p_addrinfo->ai_addrlen) == NULL)
+        if (inet_ntop(p_addrinfo->ai_family, (void *)(socket_addr_ip), socket_addr_ip_text, p_addrinfo->ai_addrlen) == NULL)
         {
             fprintf(stderr, "Error en inet_ntop: %s\n", strerror(errno));
-            return (EXIT_FAILURE);
+            exit(EXIT_FAILURE);
         }
-        printf("\tDirección IPv%s: %s (%s)\n", (p_addrinfo->ai_family == AF_INET6) ? "6" : "4", socket_addr_ip_text, (p_addrinfo->ai_socktype == SOCK_STREAM) ? "SOCK_STREAM" : (p_addrinfo->ai_socktype == SOCK_DGRAM) ? "SOCK_DGRAM" : "otro tipo de socket" );
+
+        printf("\tDirección IPv%s: %s (%s)\n", (p_addrinfo->ai_family == AF_INET6) ? "6" : "4", socket_addr_ip_text, (p_addrinfo->ai_socktype == SOCK_STREAM) ? "SOCK_STREAM" : (p_addrinfo->ai_socktype == SOCK_DGRAM) ? "SOCK_DGRAM" : "otro tipo de socket");
     }
 
     freeaddrinfo(result); // Libera toda la lista enlazada de structs sockaddrinfo
     free(socket_addr_ip_text);
     result = NULL; // Todos estos punteros ahora apuntan a zonas de memoria basura
     p_addrinfo = NULL;
-    socket_addr_struct = NULL;
     socket_addr_ip = NULL;
     socket_addr_ip = NULL;
 
