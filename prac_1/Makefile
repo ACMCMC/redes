@@ -1,4 +1,4 @@
-ARCHS_C = inet4_pton.c inet6_pton.c
+ARCHS_C = inet4_pton.c inet6_pton.c getaddrinfo.c
 
 OUTPUTS = $(ARCHS_C:.c=.out)
 
