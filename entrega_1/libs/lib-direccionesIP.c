@@ -61,7 +61,7 @@ int get_host_info(char *name)
 
         if (inet_ntop(p_addrinfo->ai_family, (void *)(socket_addr_ip), socket_addr_ip_text, p_addrinfo->ai_addrlen) == NULL)
         {
-            fprintf(stderr, "Error en inet_ntop: %s\n", strerror(errno));
+            fprintf(stderr, "Error en inet_ntop: %s. Abortando.\n", strerror(errno));
             exit(EXIT_FAILURE);
         }
 
@@ -83,7 +83,18 @@ int get_host_info(char *name)
 // Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
 int get_service_info(char *service)
 {
-    printf("%s\n", service);
+    struct protoent* protocol; // Guardará información sobre el protocolo
+
+    printf("****************************************************************\n"); // Mensaje para el usuario
+
+    protocol = getprotobyname(service); // Obtener una estructura protoent alojada estáticamente por la propia función getprotobynumber(), que describa al protocolo del nombre que se le pasa como parámetro. El valor de retorno es la dirección en memoria de la estructura, a la que apuntar el puntero.
+
+    if ( protocol == NULL ) { // Si el puntero apunta a NULL, es que algo fue mal en la función
+        fprintf(stderr, "Error obteniendo información de protocolo.\n");
+        exit(EXIT_FAILURE); // Salimos con error
+    }
+
+    printf("Servicio %s: puerto %d\n", service, protocol->p_proto);
 
     return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
 }
@@ -103,7 +114,18 @@ int get_addr_info(char *addr)
 // Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
 int get_port_info(char *port)
 {
-    printf("%s\n", port);
+    struct protoent* protocol; // Guardará información sobre el protocolo
+
+    printf("****************************************************************\n"); // Mensaje para el usuario
+
+    protocol = getprotobynumber(atoi(port)); // Obtener una estructura protoent alojada estáticamente por la propia función getprotobynumber(), que describa al protocolo del número que se le pasa como parámetro. Antes hay que convertirlo a int para que sea el tipo de dato adecuado, usando atoi(). El valor de retorno es la dirección en memoria de la estructura, a la que apuntar el puntero.
+
+    if ( protocol == NULL ) { // Si el puntero apunta a NULL, es que algo fue mal en la función
+        fprintf(stderr, "Error obteniendo información de protocolo con número %s.\n", port);
+        exit(EXIT_FAILURE); // Salimos con error
+    }
+
+    printf("Puerto %s: servicio %s\n", port, protocol->p_name);
 
     return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
 }
