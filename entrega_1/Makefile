@@ -15,7 +15,7 @@ ARGS := -Wall -Wextra -pedantic
 all: $(OUTPUTS)
 
 $(OUTPUTS): $(OBJS)
-	gcc $(@:.out=.o) $(OBJS_HEADERS) -o $@ -L $(HEADERS_DIR) $(ARGS)
+	gcc $(@:.out=.o) $(OBJS_HEADERS) -o $(@:.out=) -L $(HEADERS_DIR) $(ARGS)
 
 %.o: %.c
 	gcc -o $@ -c $< -L $(HEADERS_DIR) $(ARGS)
