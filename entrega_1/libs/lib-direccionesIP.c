@@ -90,7 +90,7 @@ int get_service_info(char *service)
     protocol = getprotobyname(service); // Obtener una estructura protoent alojada estáticamente por la propia función getprotobynumber(), que describa al protocolo del nombre que se le pasa como parámetro. El valor de retorno es la dirección en memoria de la estructura, a la que apuntar el puntero.
 
     if ( protocol == NULL ) { // Si el puntero apunta a NULL, es que algo fue mal en la función
-        fprintf(stderr, "Error obteniendo información de protocolo.\n");
+        fprintf(stderr, "Error obteniendo información de protocolo con nombre %s.\n", service);
         exit(EXIT_FAILURE); // Salimos con error
     }
 
