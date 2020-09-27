@@ -96,6 +96,9 @@ int get_service_info(char *service)
 
     printf("Servicio %s: puerto %d\n", service, protocol->p_proto);
 
+    endprotoent(); // Se encarga de cerrar una posible conexión con la BD de protocolos, si había quedado abierta. No devuelve nada, así que no hay que checkear errores
+    // No hace falta liberar protocol, porque en la documentación dice que las funciones que hemos usado "return a pointer to a statically allocated protoent structure", y que esas funciones "all use the same static area to return the protoent structure"
+
     return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
 }
 
@@ -126,6 +129,9 @@ int get_port_info(char *port)
     }
 
     printf("Puerto %s: servicio %s\n", port, protocol->p_name);
+
+    endprotoent(); // Se encarga de cerrar una posible conexión con la BD de protocolos, si había quedado abierta. No devuelve nada, así que no hay que checkear errores
+    // No hace falta liberar protocol, porque en la documentación dice que las funciones que hemos usado "return a pointer to a statically allocated protoent structure", y que esas funciones "all use the same static area to return the protoent structure"
 
     return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
 }
