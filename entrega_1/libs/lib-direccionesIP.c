@@ -107,7 +107,38 @@ int get_service_info(char *service)
 // Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
 int get_addr_info(char *addr)
 {
-    printf("%s\n", addr);
+    char addr_ip_text[100]; // Aquí guardaremos el nombre de host que buscamos. No sabemos a priori cuánto puede ocupar
+    struct addrinfo addr_info_params; // Lo usaremos para encapsular los parámetros de llamada a getaddrinfo()
+    struct addrinfo* addr_info_ret; // Aquí estará el resultado de la llamada a getaddrinfo()
+    int ai_family; // We will store the address family here
+    int error_check;                  // Usaremos esta variable para comprobar errores en la llamada a funciones del sistema
+
+    printf("****************************************************************\n"); // Mensaje para el usuario
+    
+    memset(&addr_info_params, 0, sizeof(struct addrinfo));
+    addr_info_params.ai_family = AF_UNSPEC; // Este parámetro nos indica que getaddrinfo() debe devolvernos un resultado para cualquiera que sea la familia de la IP con la que llamamos a la función
+    addr_info_params.ai_flags = AI_NUMERICHOST; // Este parámetro indica que la dirección que le pasamos como parámetro de búsqueda tiene formato numérico (es una IP)
+
+    error_check = getaddrinfo(addr, NULL, &addr_info_params, &addr_info_ret); // Llamamos a getaddrinfo para obtener la familia de la dirección IP, ya que a priori no la conocemos. No nos importa el resultado de la búsqueda, solo que nos diga la familia
+
+    if ( error_check ) { // Si el valor no es 0, es que hubo un error (probablemente en el formato de la dirección)
+        fprintf(stderr, "Error en el formato de la dirección %s: %s. Abortando.\n", addr, gai_strerror(error_check)); // gai_strerror() nos da información en formato legible por humanos sobre el error
+        exit(EXIT_FAILURE);
+    }
+
+    ai_family = addr_info_ret->ai_family; // Guardamos ai_family del retorno de getaddrinfo()
+
+    error_check = getnameinfo(addr_info_ret->ai_addr, addr_info_ret->ai_addrlen, addr_ip_text, sizeof(addr_ip_text), NULL, 0, 0); // Obtenemos información sobre el host de la dirección IP que recibimos como argumento. Ya la tenemos encapsulada de antes en addr_info_ret->ai_addr. addr_info_ret->ai_addrlen es la longitud. El cuarto parámetro es el puntero a la cadena de texto donde guardaremos el nombre de host traducido, de longitud sizeof(la cadena). El quinto parámetro es NULL porque no estamos buscando un servicio, lo mismo para el sexto (en este caso es 0, porque como pasamos un puntero nulo tiene longitud 0). El séptimo es 0 porque no queremos especificar ningún flag en concreto.
+
+    if ( error_check ) {
+        fprintf(stderr, "Error llamando a getnameinfo. Error: %s. Abortando.\n", gai_strerror(error_check)); // gai_strerror() nos da información en formato legible por humanos sobre el error
+        exit(EXIT_FAILURE);
+    }
+    
+    printf("Dirección IPv%s %s: host %s\n", ( ai_family == AF_INET6 ) ? "6" : ( ai_family == AF_INET ) ? "4" : "?" , addr, addr_ip_text);
+
+    freeaddrinfo(addr_info_ret); // Liberamos memoria
+    addr_info_ret = NULL;
 
     return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
 }
@@ -124,7 +155,7 @@ int get_port_info(char *port)
     protocol = getprotobynumber(atoi(port)); // Obtener una estructura protoent alojada estáticamente por la propia función getprotobynumber(), que describa al protocolo del número que se le pasa como parámetro. Antes hay que convertirlo a int para que sea el tipo de dato adecuado, usando atoi(). El valor de retorno es la dirección en memoria de la estructura, a la que apuntar el puntero.
 
     if ( protocol == NULL ) { // Si el puntero apunta a NULL, es que algo fue mal en la función (muy probablemente, que no se encontró el protocolo)
-        fprintf(stderr, "Error obteniendo información de protocolo con número %s.\n", port);
+        fprintf(stderr, "Error obteniendo información del protocolo con número %s.\n", port);
         exit(EXIT_FAILURE); // Salimos con error
     }
 
