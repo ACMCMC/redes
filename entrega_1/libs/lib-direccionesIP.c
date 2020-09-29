@@ -181,3 +181,72 @@ int get_port_info(char *port)
 
     return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
 }
+
+// Obtiene información del host conjuntamente con un puerto y la imprime por pantalla
+// name: Nombre del host (p. ej., "www.google.es")
+// service: Nombre del servicio (p. ej., "http")
+// Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
+int get_host_and_port_info(char* name, char* service) {
+    
+  
+    return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
+}
+
+// Obtiene información del host conjuntamente con un puerto y la imprime por pantalla
+// addr: Dirección IPv4 o IPv6 (p. ej, "192.168.1.1")
+// port: Puerto (p. ej, "80")
+// Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
+int get_name_and_service_info(char* addr, char* port) {
+    char addr_ip_text[100];           // Aquí guardaremos el nombre de host que buscamos. No sabemos a priori cuánto puede ocupar
+    struct addrinfo addr_info_params; // Lo usaremos para encapsular los parámetros de llamada a getaddrinfo()
+    struct addrinfo *addr_info_ret;   // Aquí estará el resultado de la llamada a getaddrinfo()
+    int ai_family;                    // We will store the address family here
+    int error_check;                  // Usaremos esta variable para comprobar errores en la llamada a funciones del sistema
+
+    printf("****************************************************************\n"); // Mensaje para el usuario
+
+    memset(&addr_info_params, 0, sizeof(struct addrinfo));
+    addr_info_params.ai_family = AF_UNSPEC;     // Este parámetro nos indica que getaddrinfo() debe devolvernos un resultado para cualquiera que sea la familia de la IP con la que llamamos a la función
+    addr_info_params.ai_flags = AI_NUMERICHOST; // Este parámetro indica que la dirección que le pasamos como parámetro de búsqueda tiene formato numérico (es una IP)
+
+    error_check = getaddrinfo(addr, NULL, &addr_info_params, &addr_info_ret); // Llamamos a getaddrinfo para obtener la familia de la dirección IP, ya que a priori no la conocemos. No nos importa el resultado de la búsqueda, solo que nos diga la familia
+
+    if (error_check)
+    {                                                                                                                 // Si el valor no es 0, es que hubo un error (probablemente en el formato de la dirección)
+        fprintf(stderr, "Error en el formato de la dirección %s: %s. Abortando.\n", addr, gai_strerror(error_check)); // gai_strerror() nos da información en formato legible por humanos sobre el error
+        return (EXIT_FAILURE);
+    }
+
+    ai_family = addr_info_ret->ai_family; // Guardamos ai_family del retorno de getaddrinfo()
+
+    error_check = getnameinfo(addr_info_ret->ai_addr, addr_info_ret->ai_addrlen, addr_ip_text, sizeof(addr_ip_text), NULL, 0, 0); // Obtenemos información sobre el host de la dirección IP que recibimos como argumento. Ya la tenemos encapsulada de antes en addr_info_ret->ai_addr. addr_info_ret->ai_addrlen es la longitud. El cuarto parámetro es el puntero a la cadena de texto donde guardaremos el nombre de host traducido, de longitud sizeof(la cadena). El quinto parámetro es NULL porque no estamos buscando un servicio, lo mismo para el sexto (en este caso es 0, porque como pasamos un puntero nulo tiene longitud 0). El séptimo es 0 porque no queremos especificar ningún flag en concreto.
+
+    if (error_check)
+    {
+        fprintf(stderr, "Error llamando a getnameinfo. Error: %s. Abortando.\n", gai_strerror(error_check)); // gai_strerror() nos da información en formato legible por humanos sobre el error
+        return (EXIT_FAILURE);
+    }
+
+    struct sockaddr_in6 sockaddr; // Struct para encapsular los parámetros de llamada a getaddrinfo()
+    char service[50];             // Longitud arbitraria porque no sabemos cómo de grande puede ser el nombre del servicio
+
+    printf("****************************************************************\n"); // Mensaje para el usuario
+
+    memset(&sockaddr, 0, sizeof(sockaddr));           // Llenamos la estructura de 0s
+    sockaddr.sin6_family = AF_INET6;                  // Especificamos una familia de direcciones aunque no estemos buscando una IP sino un puerto
+    sockaddr.sin6_port = htons((uint16_t)atoi(port)); // Para buscar el puerto, tenemos que convertirlo a número (int) con atoi, y después a formato de red con htons
+
+    error_check = getnameinfo((struct sockaddr *)&sockaddr, sizeof(sockaddr), NULL, 0, service, sizeof(service), 0); // Obtenemos la información del servicio asociado al puerto. No especificamos nada en host porque no estamos buscando esa información. Tampoco necesitamos ningún flag.
+
+    if (error_check != 0)
+    {                                                                         // Si hubo un error...
+        fprintf(stderr, "Se tuvo el error: %s\n", gai_strerror(error_check)); // Imprimimos el error en un formato legible por personas a stderr, el error lo podemos obtener a partir del código numérico usando gai_strerror()
+        return (EXIT_FAILURE);                                                // Salimos con EXIT_FAILURE, para indicar un error
+    }
+
+    printf("%s:%s: %s (%s)\n", addr, port, addr_ip_text, service);
+
+    freeaddrinfo(addr_info_ret); // Liberamos memoria
+
+    return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
+}

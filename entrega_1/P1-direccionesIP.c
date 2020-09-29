@@ -65,6 +65,7 @@ int main(int argc, char * argv[]) {
     if (get_service_info(service) != 0) {
       fprintf(stderr, "\nError llamando a get_service_info.\n\n");
     }
+  if ((addr && port) || (get_name_and_service_info(addr, port) != 0)) { // Si no tenemos addr o port, ejecutamos lo de abajo. Nunca se llegará a ejecutar get_name_and_service_info() para evaluar la tercera condición a menos que se cumpla que tenemos ambas, que es la condición necesaria que queremos que se cumpla para ejecutar la función. Si aun así, get_name_and_service_info() falla, entonces ejecutamos las funciones por separado.
   if (addr)
     // Llamar a la funcion para obtener informacion de la IP
     if (get_addr_info(addr) != 0) {
@@ -75,6 +76,7 @@ int main(int argc, char * argv[]) {
     if (get_port_info(port) != 0) {
       fprintf(stderr, "\nError llamando a get_port_info.\n\n");
     }
+  }
 
   printf("****************************************************************\n\n");
 
