@@ -37,7 +37,7 @@ int get_host_info(char *name)
     if (error_check != 0)
     {                                                                         // Si hubo un error...
         fprintf(stderr, "Se tuvo el error: %s\n", gai_strerror(error_check)); // Imprimimos el error en un formato legible por personas a stderr, el error lo podemos obtener a partir del código numérico usando gai_strerror()
-        exit(EXIT_FAILURE);                                                   // Salimos con EXIT_FAILURE, para indicar un error
+        return(EXIT_FAILURE);                                                   // Salimos con EXIT_FAILURE, para indicar un error
     }
 
     for (p_addrinfo = result; p_addrinfo != NULL; p_addrinfo = p_addrinfo->ai_next)
@@ -62,7 +62,7 @@ int get_host_info(char *name)
         if (inet_ntop(p_addrinfo->ai_family, (void *)(socket_addr_ip), socket_addr_ip_text, p_addrinfo->ai_addrlen) == NULL)
         {
             fprintf(stderr, "Error en inet_ntop: %s. Abortando.\n", strerror(errno));
-            exit(EXIT_FAILURE);
+            return(EXIT_FAILURE);
         }
 
         printf("\tDirección IPv%s: %s (%s)\n", (p_addrinfo->ai_family == AF_INET6) ? "6" : "4", socket_addr_ip_text, (p_addrinfo->ai_socktype == SOCK_STREAM) ? "SOCK_STREAM" : (p_addrinfo->ai_socktype == SOCK_DGRAM) ? "SOCK_DGRAM" : "otro tipo de socket");
@@ -83,22 +83,29 @@ int get_host_info(char *name)
 // Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
 int get_service_info(char *service)
 {
-    struct protoent* protocol; // Guardará información sobre el protocolo
+    struct addrinfo hints;         // Struct para encapsular los parámetros de llamada a getaddrinfo()
+    struct addrinfo *res = NULL;   // Lista enlazada de structs de tipo addrinfo
+    int error_check;                  // Usaremos esta variable para comprobar errores en la llamada a funciones del sistema
 
     printf("****************************************************************\n"); // Mensaje para el usuario
 
-    protocol = getprotobyname(service); // Obtener una estructura protoent alojada estáticamente por la propia función getprotobynumber(), que describa al protocolo del nombre que se le pasa como parámetro. El valor de retorno es la dirección en memoria de la estructura, a la que apuntar el puntero.
+    memset(&hints, 0, sizeof(struct addrinfo)); // Llenamos la estructura de 0s
+    hints.ai_family = AF_INET6;                // No buscamos una familia concreta de direcciones IP
+    hints.ai_socktype = 0;                      // No nos importa el tipo de socket
+    hints.ai_protocol = 0;                      // Tampoco nos importa el protocolo
+    hints.ai_flags = AI_PASSIVE;                         // Aquí se pueden especificar flags adicionales haciendo un OR bitwise, pero como no queremos hacerlo ponemos un 0 (ningún parámetro)
 
-    if ( protocol == NULL ) { // Si el puntero apunta a NULL, es que algo fue mal en la función (muy probablemente, que no se encontró el protocolo)
-        fprintf(stderr, "Error obteniendo información de protocolo con nombre %s.\n", service);
-        exit(EXIT_FAILURE); // Salimos con error
+    error_check = getaddrinfo(NULL, service, &hints, &res);
+
+    if (error_check != 0)
+    {                                                                         // Si hubo un error...
+        fprintf(stderr, "Se tuvo el error: %s\n", gai_strerror(error_check)); // Imprimimos el error en un formato legible por personas a stderr, el error lo podemos obtener a partir del código numérico usando gai_strerror()
+        return(EXIT_FAILURE);                                                   // Salimos con EXIT_FAILURE, para indicar un error
     }
 
-    printf("Servicio %s: puerto %d\n", service, protocol->p_proto);
+    printf("Servicio %s: puerto %d\n", service, ntohs(((struct sockaddr_in6 *) res->ai_addr)->sin6_port));
 
-    endprotoent(); // Se encarga de cerrar una posible conexión con la BD de protocolos, si había quedado abierta. No devuelve nada, así que no hay que checkear errores
-
-    // No hace falta liberar protocol, porque en la documentación dice que las funciones que hemos usado "return a pointer to a statically allocated protoent structure", y que esas funciones "all use the same static area to return the protoent structure"
+    freeaddrinfo(res); // Liberamos memoria
 
     return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
 }
@@ -124,7 +131,7 @@ int get_addr_info(char *addr)
 
     if ( error_check ) { // Si el valor no es 0, es que hubo un error (probablemente en el formato de la dirección)
         fprintf(stderr, "Error en el formato de la dirección %s: %s. Abortando.\n", addr, gai_strerror(error_check)); // gai_strerror() nos da información en formato legible por humanos sobre el error
-        exit(EXIT_FAILURE);
+        return(EXIT_FAILURE);
     }
 
     ai_family = addr_info_ret->ai_family; // Guardamos ai_family del retorno de getaddrinfo()
@@ -133,13 +140,12 @@ int get_addr_info(char *addr)
 
     if ( error_check ) {
         fprintf(stderr, "Error llamando a getnameinfo. Error: %s. Abortando.\n", gai_strerror(error_check)); // gai_strerror() nos da información en formato legible por humanos sobre el error
-        exit(EXIT_FAILURE);
+        return(EXIT_FAILURE);
     }
     
     printf("Dirección IPv%s %s: host %s\n", ( ai_family == AF_INET6 ) ? "6" : ( ai_family == AF_INET ) ? "4" : "?" , addr, addr_ip_text);
 
     freeaddrinfo(addr_info_ret); // Liberamos memoria
-    addr_info_ret = NULL;
 
     return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
 }
@@ -149,22 +155,25 @@ int get_addr_info(char *addr)
 // Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
 int get_port_info(char *port)
 {
-    struct protoent* protocol; // Guardará información sobre el protocolo
+    struct sockaddr_in6 sockaddr;         // Struct para encapsular los parámetros de llamada a getaddrinfo()
+    int error_check;                  // Usaremos esta variable para comprobar errores en la llamada a funciones del sistema
+    char service[100];
 
     printf("****************************************************************\n"); // Mensaje para el usuario
 
-    protocol = getprotobynumber(atoi(port)); // Obtener una estructura protoent alojada estáticamente por la propia función getprotobynumber(), que describa al protocolo del número que se le pasa como parámetro. Antes hay que convertirlo a int para que sea el tipo de dato adecuado, usando atoi(). El valor de retorno es la dirección en memoria de la estructura, a la que apuntar el puntero.
+    memset(&sockaddr, 0, sizeof(sockaddr)); // Llenamos la estructura de 0s
+    sockaddr.sin6_family = AF_INET6;
+    sockaddr.sin6_port = htons((uint16_t) atoi(port));
 
-    if ( protocol == NULL ) { // Si el puntero apunta a NULL, es que algo fue mal en la función (muy probablemente, que no se encontró el protocolo)
-        fprintf(stderr, "Error obteniendo información del protocolo con número %s.\n", port);
-        exit(EXIT_FAILURE); // Salimos con error
+    error_check = getnameinfo((struct sockaddr *) &sockaddr, sizeof(sockaddr), NULL, 0, service, sizeof(service), 0);
+
+    if (error_check != 0)
+    {                                                                         // Si hubo un error...
+        fprintf(stderr, "Se tuvo el error: %s\n", gai_strerror(error_check)); // Imprimimos el error en un formato legible por personas a stderr, el error lo podemos obtener a partir del código numérico usando gai_strerror()
+        return(EXIT_FAILURE);                                                   // Salimos con EXIT_FAILURE, para indicar un error
     }
 
-    printf("Puerto %s: servicio %s\n", port, protocol->p_name);
-
-    endprotoent(); // Se encarga de cerrar una posible conexión con la BD de protocolos, si había quedado abierta. No devuelve nada, así que no hay que checkear errores
-
-    // No hace falta liberar protocol, porque en la documentación dice que las funciones que hemos usado "return a pointer to a statically allocated protoent structure", y que esas funciones "all use the same static area to return the protoent structure"
+    printf("Puerto %s: servicio %s\n", port, service);
 
     return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
 }
