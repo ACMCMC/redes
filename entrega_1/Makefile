@@ -23,3 +23,4 @@ $(OUTPUTS): $(OBJS)
 clean:
 	-find . -type f -name '*.o' -delete
 	-find . -type f -name '*.out' -delete
+	-rm $(OUTPUTS:.out=)
