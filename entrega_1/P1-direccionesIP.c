@@ -57,16 +57,24 @@ int main(int argc, char * argv[]) {
   // Llamamos a las funciones correspondientes a los argumentos solicitados (que son != NULL)
   if (name)
     // Llamar a la funcion para obtener informacion del host
-    get_host_info(name);
+    if (get_host_info(name) != 0) {
+      fprintf(stderr, "\nError llamando a get_host_info.\n\n");
+    }
   if (service)
     // Llamar a la funcion para obtener informacion del servicio
-    get_service_info(service);
+    if (get_service_info(service) != 0) {
+      fprintf(stderr, "\nError llamando a get_service_info.\n\n");
+    }
   if (addr)
     // Llamar a la funcion para obtener informacion de la IP
-    get_addr_info(addr);
+    if (get_addr_info(addr) != 0) {
+      fprintf(stderr, "\nError llamando a get_addr_info.\n\n");
+    }
   if (port)
     // Llamar a la funcion para obtener informacion del puerto
-    get_port_info(port);
+    if (get_port_info(port) != 0) {
+      fprintf(stderr, "\nError llamando a get_port_info.\n\n");
+    }
 
   printf("****************************************************************\n\n");
 
