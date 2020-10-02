@@ -189,7 +189,6 @@ int get_port_info(char *port)
 // service: Nombre del servicio (p. ej., "http")
 // Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
 int get_host_and_port_info(char* name, char* service) {
-    struct addrinfo hints;       // Struct para encapsular los parámetros de llamada a getaddrinfo()
     struct addrinfo *res = NULL; // Lista enlazada de structs de tipo addrinfo
     int error_check;             // Usaremos esta variable para comprobar errores en la llamada a funciones del sistema
 
