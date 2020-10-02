@@ -104,11 +104,6 @@ int get_service_info(char *service)
         return (EXIT_FAILURE);                                                // Salimos con EXIT_FAILURE, para indicar un error
     }
 
-    if (ntohs(((struct sockaddr_in6 *)res->ai_addr)->sin6_port) == 0) {
-        fprintf(stderr, "Número de puerto desconocido para %s.\n", service); // Imprimimos el error en un formato legible por personas a stderr
-        return (EXIT_FAILURE);                                                // Salimos con EXIT_FAILURE, para indicar un error
-    }
-
     printf("Servicio %s: puerto %d\n", service, ntohs(((struct sockaddr_in6 *)res->ai_addr)->sin6_port));
 
     freeaddrinfo(res); // Liberamos memoria
