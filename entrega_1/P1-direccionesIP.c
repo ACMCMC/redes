@@ -61,11 +61,11 @@ int main(int argc, char *argv[])
   // Llamamos a las funciones correspondientes a los argumentos solicitados (que son != NULL)
 
   if (name && service)
-  { // Nunca se llegará a ejecutar get_host_and_port_info() a menos que se cumpla que tenemos name y service, que es la condición necesaria que queremos que se cumpla para ejecutar la función. Si no tenemos name o service, ejecutamos lo del else.
+  {                                                            // Nunca se llegará a ejecutar get_host_and_port_info() a menos que se cumpla que tenemos name y service, que es la condición necesaria que queremos que se cumpla para ejecutar la función. Si no tenemos name o service, ejecutamos lo del else.
     if (get_host_and_port_info(name, service) != EXIT_SUCCESS) // Si aun así, get_host_and_port_info() falla, entonces ejecutamos las funciones por separado.
     {
       fprintf(stderr, "\nError llamando a get_host_and_port_info. Reintentándolo con las funciones get_host_info y get_service_info por separado.\n\n");
-      get_host_info(name); // No nos interesa controlar el error esta vez
+      get_host_info(name);       // No nos interesa controlar el error esta vez
       get_service_info(service); // No nos interesa controlar el error esta vez
     }
   }
@@ -82,7 +82,7 @@ int main(int argc, char *argv[])
   }
 
   if (addr && port)
-  { // Nunca se llegará a ejecutar get_name_and_service_info() a menos que se cumpla que tenemos addr y port, que es la condición necesaria que queremos que se cumpla para ejecutar la función. Si no tenemos addr o port, ejecutamos lo de abajo.
+  {                                                            // Nunca se llegará a ejecutar get_name_and_service_info() a menos que se cumpla que tenemos addr y port, que es la condición necesaria que queremos que se cumpla para ejecutar la función. Si no tenemos addr o port, ejecutamos lo de abajo.
     if (get_name_and_service_info(addr, port) != EXIT_SUCCESS) // Si aun así, get_name_and_service_info() falla, entonces ejecutamos las funciones por separado.
     {
       fprintf(stderr, "\nError llamando a get_name_and_service_info. Reintentándolo con las funciones get_addr_info y get_port_info por separado.\n\n");
