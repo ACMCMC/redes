@@ -6,8 +6,6 @@
 #include <errno.h>
 #include <netdb.h>
 
-#define ARBITRARY_LENGTH 100
-
 // Obtiene información del host y la imprime por pantalla
 // name: Nombre del host (p. ej., "www.google.es")
 // Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
@@ -26,7 +24,7 @@ int get_host_info(char *name)
     addrinfo.ai_family = AF_UNSPEC;                // No buscamos una familia concreta de direcciones IP
     addrinfo.ai_socktype = 0;                      // No nos importa el tipo de socket
     addrinfo.ai_protocol = 0;                      // Tampoco nos importa el protocolo
-    addrinfo.ai_flags = 0;                         // Aquí se pueden especificar flags adicionales haciendo un OR bitwise, pero como no queremos hacerlo ponemos un 0 (ningún parámetro)
+    addrinfo.ai_flags = AI_CANONNAME;                         // Aquí se pueden especificar flags adicionales haciendo un OR bitwise, pero como no queremos hacerlo ponemos un 0 (ningún parámetro)
 
     // getaddrinfo es una función para obtener la información sobre las direcciones IP asociadas a nombres de dominio, llamando a un DNS. También se puede usar para obtener información sobre servicios, o sobre servicios de un host, pero en este caso no se aplica.
     // name: Nombre del host, el parámetro que se pasa a esta función
@@ -117,7 +115,7 @@ int get_service_info(char *service)
 // Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
 int get_addr_info(char *addr)
 {
-    char addr_ip_text[ARBITRARY_LENGTH];           // Aquí guardaremos el nombre de host que buscamos. No sabemos a priori cuánto puede ocupar
+    char addr_ip_text[NI_MAXHOST];           // Aquí guardaremos el nombre de host que buscamos. No sabemos a priori cuánto puede ocupar
     struct addrinfo addr_info_params; // Lo usaremos para encapsular los parámetros de llamada a getaddrinfo()
     struct addrinfo *addr_info_ret;   // Aquí estará el resultado de la llamada a getaddrinfo()
     int ai_family;                    // We will store the address family here
@@ -141,13 +139,13 @@ int get_addr_info(char *addr)
 
     error_check = getnameinfo(addr_info_ret->ai_addr, addr_info_ret->ai_addrlen, addr_ip_text, sizeof(addr_ip_text), NULL, 0, 0); // Obtenemos información sobre el host de la dirección IP que recibimos como argumento. Ya la tenemos encapsulada de antes en addr_info_ret->ai_addr. addr_info_ret->ai_addrlen es la longitud. El tercer parámetro es el puntero a la cadena de texto donde guardaremos el nombre de host traducido, de longitud sizeof(la cadena). El quinto parámetro es NULL porque no estamos buscando un servicio, lo mismo para el sexto (en este caso es 0, porque como pasamos un puntero nulo tiene longitud 0). El séptimo es 0 porque no queremos especificar ningún flag en concreto.
 
-    if (error_check)
+    if (error_check) // Comprobamos si hubo algún error
     {
         fprintf(stderr, "Error llamando a getnameinfo. Error: %s. Abortando.\n", gai_strerror(error_check)); // gai_strerror() nos da información en formato legible por humanos sobre el error
         return (EXIT_FAILURE);
     }
 
-    printf("Dirección IPv%s %s: host %s\n", (ai_family == AF_INET6) ? "6" : (ai_family == AF_INET) ? "4" : "?", addr, addr_ip_text);
+    printf("Dirección IPv%s %s: host %s\n", (ai_family == AF_INET6) ? "6" : (ai_family == AF_INET) ? "4" : "?", addr, addr_ip_text); // Imprimimos el resultado
 
     freeaddrinfo(addr_info_ret); // Liberamos memoria
 
@@ -161,7 +159,7 @@ int get_port_info(char *port)
 {
     struct sockaddr_in6 sockaddr; // Struct para encapsular los parámetros de llamada a getaddrinfo()
     int error_check;              // Usaremos esta variable para comprobar errores en la llamada a funciones del sistema
-    char service[ARBITRARY_LENGTH];             // Longitud arbitraria porque no sabemos cómo de grande puede ser el nombre del servicio
+    char service[NI_MAXSERV];             // Longitud arbitraria porque no sabemos cómo de grande puede ser el nombre del servicio
 
     printf("****************************************************************\n"); // Mensaje para el usuario
 
@@ -204,7 +202,7 @@ int get_host_and_port_info(char* name, char* service) {
     addrinfo.ai_family = AF_UNSPEC;                // No buscamos una familia concreta de direcciones IP
     addrinfo.ai_socktype = 0;                      // No nos importa el tipo de socket
     addrinfo.ai_protocol = 0;                      // Tampoco nos importa el protocolo
-    addrinfo.ai_flags = 0;                         // Aquí se pueden especificar flags adicionales haciendo un OR bitwise, pero como no queremos hacerlo ponemos un 0 (ningún parámetro)
+    addrinfo.ai_flags = AI_CANONNAME;                         // Aquí se pueden especificar flags adicionales haciendo un OR bitwise, pero como no queremos hacerlo ponemos un 0 (ningún parámetro)
 
     // getaddrinfo es una función para obtener la información sobre las direcciones IP asociadas a nombres de dominio, llamando a un DNS. También se puede usar para obtener información sobre servicios, o sobre servicios de un host, pero en este caso no se aplica.
     // name: Nombre del host, el parámetro que se pasa a esta función
@@ -245,7 +243,7 @@ int get_host_and_port_info(char* name, char* service) {
             return (EXIT_FAILURE);
         }
 
-        printf("\tDirección IPv%s: %s (%s)\n", (p_addrinfo->ai_family == AF_INET6) ? "6" : "4", socket_addr_ip_text, (p_addrinfo->ai_socktype == SOCK_STREAM) ? "SOCK_STREAM" : (p_addrinfo->ai_socktype == SOCK_DGRAM) ? "SOCK_DGRAM" : "otro tipo de socket");
+        printf("\t%s (%s): IPv%s %s, puerto %d\n", name, service, (p_addrinfo->ai_family == AF_INET6) ? "6" : (p_addrinfo->ai_family == AF_INET) ? "4" : "?", socket_addr_ip_text, ntohs(((struct sockaddr_in *)p_addrinfo->ai_addr)->sin_port));
     }
 
     freeaddrinfo(res); // Liberamos memoria
@@ -264,8 +262,8 @@ int get_host_and_port_info(char* name, char* service) {
 // port: Puerto (p. ej, "80")
 // Devuelve EXIT_SUCCESS en caso de éxito, EXIT_FAILURE en caso de error
 int get_name_and_service_info(char* addr, char* port) {
-    char addr_ip_text[ARBITRARY_LENGTH];           // Aquí guardaremos el nombre de host que buscamos. No sabemos a priori cuánto puede ocupar
-    char service[ARBITRARY_LENGTH];             // Longitud arbitraria porque no sabemos cómo de grande puede ser el nombre del servicio
+    char addr_ip_text[NI_MAXHOST];           // Aquí guardaremos el nombre de host que buscamos. No sabemos a priori cuánto puede ocupar
+    char service[NI_MAXSERV];             // Longitud arbitraria porque no sabemos cómo de grande puede ser el nombre del servicio
     struct addrinfo addr_info_params; // Lo usaremos para encapsular los parámetros de llamada a getaddrinfo()
     struct addrinfo *addr_info_ret;   // Aquí estará el resultado de la llamada a getaddrinfo()
     int ai_family;                    // We will store the address family here
@@ -305,7 +303,7 @@ int get_name_and_service_info(char* addr, char* port) {
         return (EXIT_FAILURE);                                                // Salimos con EXIT_FAILURE, para indicar un error
     }
 
-    printf("IPv%s %s:%s: %s (%s)\n", (ai_family == AF_INET6) ? "6" : (ai_family == AF_INET) ? "4" : "?", addr, port, addr_ip_text, service);
+    printf("IPv%s %s, puerto %s: %s (%s)\n", (ai_family == AF_INET6) ? "6" : (ai_family == AF_INET) ? "4" : "?", addr, port, addr_ip_text, service);
 
     freeaddrinfo(addr_info_ret); // Liberamos memoria
 
