@@ -1,3 +1,5 @@
+// Aldán Creo Mariño, Redes 2020/21
+
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
