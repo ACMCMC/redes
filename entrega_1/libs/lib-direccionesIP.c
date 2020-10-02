@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <errno.h>
 #include <netdb.h>
+#include <ctype.h>
 
 // Obtiene información del host y la imprime por pantalla
 // name: Nombre del host (p. ej., "www.google.es")
@@ -103,6 +104,11 @@ int get_service_info(char *service)
         return (EXIT_FAILURE);                                                // Salimos con EXIT_FAILURE, para indicar un error
     }
 
+    if (ntohs(((struct sockaddr_in6 *)res->ai_addr)->sin6_port) == 0) {
+        fprintf(stderr, "Número de puerto desconocido para %s.\n", service); // Imprimimos el error en un formato legible por personas a stderr
+        return (EXIT_FAILURE);                                                // Salimos con EXIT_FAILURE, para indicar un error
+    }
+
     printf("Servicio %s: puerto %d\n", service, ntohs(((struct sockaddr_in6 *)res->ai_addr)->sin6_port));
 
     freeaddrinfo(res); // Liberamos memoria
@@ -160,8 +166,17 @@ int get_port_info(char *port)
     struct sockaddr_in6 sockaddr; // Struct para encapsular los parámetros de llamada a getaddrinfo()
     int error_check;              // Usaremos esta variable para comprobar errores en la llamada a funciones del sistema
     char service[NI_MAXSERV];             // Longitud arbitraria porque no sabemos cómo de grande puede ser el nombre del servicio
+    unsigned int i; // Variable auxiliar para comprobar si el puerto introducido es un número
 
     printf("****************************************************************\n"); // Mensaje para el usuario
+
+    for (i=0;i<strlen(port); i++) { // Comprobamos que el puerto introducido sea un número
+        if (!isdigit(port[i]))
+        {
+        fprintf(stderr, "%s no es un número de puerto válido.\n", port); // Imprimimos el error en un formato legible por personas a stderr
+        return (EXIT_FAILURE);                                                // Salimos con EXIT_FAILURE, para indicar un error
+        }
+    }
 
     memset(&sockaddr, 0, sizeof(sockaddr));           // Llenamos la estructura de 0s
     sockaddr.sin6_family = AF_INET6;                  // Especificamos una familia de direcciones aunque no estemos buscando una IP sino un puerto
