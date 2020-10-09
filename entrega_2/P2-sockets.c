@@ -10,7 +10,7 @@ int main(int argc, char **argv)
 
     int opt;
     // port: Puerto
-    char *port = NULL, *direccion = NULL;
+    char *port = NULL, *direccion = NULL, *mensaje_enviar = NULL;
     int tipo_host = 0; // Por defecto es un cliente
 
     // Comprueba que exista al menos un operando
@@ -25,10 +25,13 @@ int main(int argc, char **argv)
     // La funcion getopt() permite de forma facil manejar operandos en linea de comandos
     // Las opciones n: s: i: p: indican que esos "flags" (nsip) deben de ir seguidos de un argumento
     // Ese parametro se guarda en la variable externa optarg
-    while ((opt = getopt(argc, argv, "scp:h:")) != -1)
+    while ((opt = getopt(argc, argv, "scp:h:m:")) != -1)
     {
         switch (opt)
         {
+        case 'm':
+            mensaje_enviar = optarg; // El host es un servidor
+            break;
         case 's':
             tipo_host = 1; // El host es un servidor
             break;
@@ -62,10 +65,10 @@ int main(int argc, char **argv)
     if (port) {
         if (tipo_host) {
             printf("Este host es un servidor. Vamos a aceptar conexiones entrantes.\n");
-            if (crear_servidor(port) != EXIT_SUCCESS)
+            if (crear_servidor(port, mensaje_enviar) != EXIT_SUCCESS)
                 fprintf(stderr, "Error ejecutando crear_servidor\n");
         } else {
-            printf("Este host es un cliente. Vamos enviar un paquete.\n");
+            printf("Este host es un cliente. Vamos a conectarnos al servidor.\n");
             if (direccion) {
             if (enviar_paquete(port, direccion) != EXIT_SUCCESS)
                 fprintf(stderr, "Error ejecutando crear_servidor\n");
