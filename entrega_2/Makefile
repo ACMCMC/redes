@@ -1,4 +1,4 @@
-ARCHS_C := P2-sockets.c
+ARCHS_C := P2_sockets.c P2_serv_mayusculas.c
 
 OUTPUTS := $(ARCHS_C:.c=.out)
 

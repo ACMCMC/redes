@@ -10,6 +10,8 @@ int main(int argc, char **argv)
 
     int opt;
     // port: Puerto
+    // direccion: IP del servidor. Solo se usa si soy un cliente
+    // mensaje_enviar: Si soy un servidor, qué mensaje enviarle a los que se me conectan
     char *port = NULL, *direccion = NULL, *mensaje_enviar = NULL;
     int tipo_host = 0; // Por defecto es un cliente
 
@@ -18,7 +20,7 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         printf("Falta un operando\n");
-        printf("Usar: %s [-p Numero de puerto]\n", argv[0]);
+        printf("Usar: %s [-s, si es un servidor] [-c, si es un cliente] [-p Numero de puerto, tanto si es servidor como cliente] [-h dirección del servidor, en caso de ser un cliente]\n", argv[0]);
         return (EXIT_FAILURE);
     }
 
@@ -30,7 +32,7 @@ int main(int argc, char **argv)
         switch (opt)
         {
         case 'm':
-            mensaje_enviar = optarg; // El host es un servidor
+            mensaje_enviar = optarg; // Si soy un servidor, qué mensaje enviarle a los que se me conectan
             break;
         case 's':
             tipo_host = 1; // El host es un servidor
@@ -42,7 +44,7 @@ int main(int argc, char **argv)
             port = optarg; // Argumento numero de puerto
             break;
         case 'h':
-            direccion = optarg; // Argumento numero de puerto
+            direccion = optarg; // IP del servidor. Solo se usa si soy un cliente
             break;
         case ':': // Se introdujo un flag sin argumento obligatorio
             fprintf(stderr, "La opción -%c requiere un argumento.\n", optopt);
