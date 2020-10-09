@@ -10,7 +10,8 @@ int main(int argc, char **argv)
 
     int opt;
     // port: Puerto
-    char *port = NULL;
+    char *port = NULL, *direccion = NULL;
+    int tipo_host = 0; // Por defecto es un cliente
 
     // Comprueba que exista al menos un operando
     // En caso de error salimos de la función main con el codigo EXIT_FAILURE
@@ -24,12 +25,21 @@ int main(int argc, char **argv)
     // La funcion getopt() permite de forma facil manejar operandos en linea de comandos
     // Las opciones n: s: i: p: indican que esos "flags" (nsip) deben de ir seguidos de un argumento
     // Ese parametro se guarda en la variable externa optarg
-    while ((opt = getopt(argc, argv, "p:")) != -1)
+    while ((opt = getopt(argc, argv, "scp:h:")) != -1)
     {
         switch (opt)
         {
+        case 's':
+            tipo_host = 1; // El host es un servidor
+            break;
+        case 'c':
+            tipo_host = 0; // El host es un cliente
+            break;
         case 'p':
             port = optarg; // Argumento numero de puerto
+            break;
+        case 'h':
+            direccion = optarg; // Argumento numero de puerto
             break;
         case ':': // Se introdujo un flag sin argumento obligatorio
             fprintf(stderr, "La opción -%c requiere un argumento.\n", optopt);
@@ -50,7 +60,20 @@ int main(int argc, char **argv)
     printf("\n");
 
     if (port) {
-        if (crear_servidor(port) != EXIT_SUCCESS)
-        fprintf(stderr, "Error ejecutando crear_servidor\n");
+        if (tipo_host) {
+            printf("Este host es un servidor. Vamos a aceptar conexiones entrantes.\n");
+            if (crear_servidor(port) != EXIT_SUCCESS)
+                fprintf(stderr, "Error ejecutando crear_servidor\n");
+        } else {
+            printf("Este host es un cliente. Vamos enviar un paquete.\n");
+            if (direccion) {
+            if (enviar_paquete(port, direccion) != EXIT_SUCCESS)
+                fprintf(stderr, "Error ejecutando crear_servidor\n");
+            } else {
+                fprintf(stderr, "Es necesario especificar una IP para realizar el envío.\n");
+            }
+        }
+    } else {
+        fprintf(stderr, "Es necesario especificar el puerto.\n");
     }
 }
