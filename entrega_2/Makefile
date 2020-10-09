@@ -1,8 +1,8 @@
-ARCHS_C := P1-direccionesIP.c
+ARCHS_C := P2-sockets.c
 
 OUTPUTS := $(ARCHS_C:.c=.out)
 
-HEADERS := ./libs/lib-direccionesIP.h
+HEADERS := ./libs/lib_entrega2.h
 HEADERS_DIR := ./libs
 IMPLS_HEADERS := $(HEADERS:.h=.c)
 OBJS_HEADERS := $(HEADERS:.h=.o)
