@@ -71,7 +71,7 @@ int main(int argc, char **argv)
             printf("Este host es un cliente. Vamos a conectarnos al servidor.\n");
             if (direccion) {
             if (enviar_paquete(port, direccion) != EXIT_SUCCESS)
-                fprintf(stderr, "Error ejecutando crear_servidor\n");
+                fprintf(stderr, "Error ejecutando enviar_paquete\n");
             } else {
                 fprintf(stderr, "Es necesario especificar una IP para realizar el envío.\n");
             }
