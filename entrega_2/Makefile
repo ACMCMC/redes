@@ -1,8 +1,8 @@
-ARCHS_C := P2_sockets.c P2_serv_mayusculas.c
+ARCHS_C := P2_sockets.c P2_serv_mayusculas.c P2_cliente_mayusculas.c
 
 OUTPUTS := $(ARCHS_C:.c=.out)
 
-HEADERS := ./libs/lib_entrega2.h
+HEADERS := ./libs/lib_entrega2_1.h ./libs/lib_entrega2_2.h
 HEADERS_DIR := ./libs
 IMPLS_HEADERS := $(HEADERS:.h=.c)
 OBJS_HEADERS := $(HEADERS:.h=.o)
