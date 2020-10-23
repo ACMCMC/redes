@@ -1,7 +1,8 @@
-*/*
 !*.c
 !*.h
 !*.md
 !Makefile
 .vscode/
 *.zip
+*.o
+*
