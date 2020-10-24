@@ -76,11 +76,11 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
 
         printf("Dirección: %s\n", ip_cliente); // Imprimimos la IP del cliente
 
-        mensaje_procesado = (char*) realloc(mensaje_procesado, sizeof(char) * (strlen(ip_cliente) - 1 + strlen(": ") - 1 + strlen(mensaje_enviar))); // Reservamos memoria para hacer el mensaje procesado. Reservamos la suma de la longitud de las cadenas (menos dos, ya que solo queremos un '\0', no tres).
+        mensaje_procesado = (char*) realloc(mensaje_procesado, sizeof(char) * (strlen(ip_cliente) + strlen(": ") + strlen(mensaje_enviar) + 1)); // Reservamos memoria para hacer el mensaje procesado. Reservamos la suma de la longitud de las cadenas (más 1, para el '0' del final).
         mensaje_procesado = strcat(strcat(ip_cliente, ": "), mensaje_enviar);
         printf("%s\n", mensaje_procesado);
 
-        bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * strlen(mensaje_procesado), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
+        bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * (strlen(mensaje_procesado) + 1), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
 
         if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
         {
