@@ -74,20 +74,20 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
             return (EXIT_FAILURE);
         }
 
-        printf("Dirección: %s\n", ip_cliente); // Imprimimos la IP del cliente
+        printf("Conectado un cliente con dirección: %s\n", ip_cliente); // Imprimimos la IP del cliente
 
         mensaje_procesado = (char*) realloc(mensaje_procesado, sizeof(char) * (strlen(ip_cliente) - 1 + strlen(": ") - 1 + strlen(mensaje_enviar))); // Reservamos memoria para hacer el mensaje procesado. Reservamos la suma de la longitud de las cadenas (menos dos, ya que solo queremos un '\0', no tres).
         mensaje_procesado = strcat(strcat(ip_cliente, ": "), mensaje_enviar);
-        printf("%s\n", mensaje_procesado);
 
+        bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * strlen(mensaje_procesado), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
+        printf("Enviados %d bytes: %s\n", bytes_enviados, mensaje_procesado); // Info para el usuario
         bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * strlen(mensaje_procesado), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
 
         if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
         {
             perror("Error enviando la respuesta");
         }
-
-        printf("Enviados %d bytes: %s\n", bytes_enviados, mensaje_enviar); // Info para el usuario
+        printf("Enviados %d bytes: %s\n", bytes_enviados, mensaje_procesado); // Info para el usuario
 
         close(socket_conexion); // Cerramos el socket para la conexión con el cliente
 
@@ -108,6 +108,7 @@ int enviar_paquete(char *puerto, char *direccion)
     int socket_servidor;                // El número de socket para la conexión con el servidor
     struct sockaddr_in direccion_envio; // Esto lo usaremos para conectarnos con el otro host (el servidor). La dirección la sacaremos de los argumentos de la función.
     char mensaje_recibido[1000];        // Aquí guardaremos el mensaje que recibimos
+    char mensaje_recibido_2[1000];        // Aquí guardaremos el mensaje que recibimos
     int error_check;                    // La usaremos para comprobar códigos de error
     int bytes_recibidos;                // Lo usaremos para saber la longitud del mensaje recibido
 
@@ -150,12 +151,21 @@ int enviar_paquete(char *puerto, char *direccion)
         close(socket_servidor); // Cerramos el socket de conexión al servidor
         return (EXIT_FAILURE);
     }
+    printf("Recibidos %d bytes: %s\n", bytes_recibidos, mensaje_recibido);
+    bytes_recibidos = recv(socket_servidor, mensaje_recibido_2, sizeof(char) * 1000, 0); // Recibimos el mensaje
+
+    if (bytes_recibidos < 0) // Miramos si hubo error recibiendo el mensaje
+    {
+        perror("Error al recibir el mensaje");
+        close(socket_servidor); // Cerramos el socket de conexión al servidor
+        return (EXIT_FAILURE);
+    }
 
     close(socket_servidor); // Cerramos el socket de conexión al servidor
 
     // No hace falta liberar memoria
 
-    printf("Recibidos %d bytes: %s\n", bytes_recibidos, mensaje_recibido);
+    printf("Recibidos %d bytes: %s\n", bytes_recibidos, mensaje_recibido_2);
 
     return (EXIT_SUCCESS);
 }
