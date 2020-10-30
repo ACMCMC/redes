@@ -1,4 +1,4 @@
-ARCHS_C := P2_sockets.c P2_serv_mayusculas.c P2_cliente_mayusculas.c
+ARCHS_C := P2_1_cliente.c P2_1_servidor.c P2_serv_mayusculas.c P2_cliente_mayusculas.c
 
 OUTPUTS := $(ARCHS_C:.c=.out)
 

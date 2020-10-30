@@ -1,4 +1,4 @@
-#include "libs/lib_entrega2_2.h"
+#include "libs/lib_entrega2_1.h"
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -12,39 +12,29 @@ int main(int argc, char **argv)
     // port: Puerto
     // direccion: IP del servidor. Solo se usa si soy un cliente
     // mensaje_enviar: Si soy un servidor, qué mensaje enviarle a los que se me conectan
-    char *port = NULL, *direccion = NULL, *mensaje_enviar = NULL;
-    int tipo_host = 0; // Por defecto es un cliente
+    char *port = NULL, *mensaje_enviar = NULL;
 
     // Comprueba que exista al menos un operando
     // En caso de error salimos de la función main con el codigo EXIT_FAILURE
     if (argc < 2)
     {
         printf("Falta un operando\n");
-        printf("Usar: %s [-f, nombre del archivo de texto a enviar] [-h, dirección del servidor] [-p, puerto del servidor]\n", argv[0]);
+        printf("Usar: %s [-p, numero de puerto] [-m, el mensaje con el que responder]\n", argv[0]);
         return (EXIT_FAILURE);
     }
 
     // La funcion getopt() permite de forma facil manejar operandos en linea de comandos
     // Las opciones n: s: i: p: indican que esos "flags" (nsip) deben de ir seguidos de un argumento
     // Ese parametro se guarda en la variable externa optarg
-    while ((opt = getopt(argc, argv, "scp:h:m:")) != -1)
+    while ((opt = getopt(argc, argv, "p:m:")) != -1)
     {
         switch (opt)
         {
         case 'm':
             mensaje_enviar = optarg; // Si soy un servidor, qué mensaje enviarle a los que se me conectan
             break;
-        case 's':
-            tipo_host = 1; // El host es un servidor
-            break;
-        case 'c':
-            tipo_host = 0; // El host es un cliente
-            break;
         case 'p':
             port = optarg; // Argumento numero de puerto
-            break;
-        case 'h':
-            direccion = optarg; // IP del servidor. Solo se usa si soy un cliente
             break;
         case ':': // Se introdujo un flag sin argumento obligatorio
             fprintf(stderr, "La opción -%c requiere un argumento.\n", optopt);
@@ -64,5 +54,16 @@ int main(int argc, char **argv)
 
     printf("\n");
 
-    // Llamamos a la función adecuada
+    if (port)
+    {
+        printf("Este host es un servidor. Vamos a aceptar conexiones entrantes.\n");
+        if (crear_servidor(port, mensaje_enviar) != EXIT_SUCCESS)
+        {
+            fprintf(stderr, "Error ejecutando crear_servidor\n");
+        }
+    }
+    else
+    {
+        fprintf(stderr, "Es necesario especificar el puerto.\n");
+    }
 }
