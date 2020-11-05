@@ -142,21 +142,14 @@ int enviar_paquete(char *puerto, char *direccion)
         close(socket_servidor); // Cerramos el socket de conexión al servidor
         return (EXIT_FAILURE);
     }
-sleep(1);
-    bytes_recibidos = recv(socket_servidor, mensaje_recibido, sizeof(char) * 1000, 0); // Recibimos el mensaje
 
-    if (bytes_recibidos < 0) // Miramos si hubo error recibiendo el mensaje
-    {
-        perror("Error al recibir el mensaje");
-        close(socket_servidor); // Cerramos el socket de conexión al servidor
-        return (EXIT_FAILURE);
+    while( (bytes_recibidos=recv(socket_servidor, mensaje_recibido, sizeof(char) * 1000, 0)) > 0 ) {
+        printf("Recibidos %d bytes: %s\n", bytes_recibidos, mensaje_recibido);
     }
 
     close(socket_servidor); // Cerramos el socket de conexión al servidor
 
     // No hace falta liberar memoria
-
-    printf("Recibidos %d bytes: %s\n", bytes_recibidos, mensaje_recibido);
 
     return (EXIT_SUCCESS);
 }
