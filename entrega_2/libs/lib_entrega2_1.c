@@ -74,7 +74,7 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
             return (EXIT_FAILURE);
         }
 
-        printf("Dirección: %s\n", ip_cliente); // Imprimimos la IP del cliente
+        printf("Conectado un cliente con dirección: %s\n", ip_cliente); // Imprimimos la IP del cliente
 
         mensaje_procesado = (char*) realloc(mensaje_procesado, sizeof(char) * (strlen(ip_cliente) + strlen(": ") + strlen(mensaje_enviar) + 1)); // Reservamos memoria para hacer el mensaje procesado. Reservamos la suma de la longitud de las cadenas (más 1, para el '0' del final).
         mensaje_procesado = strcat(strcat(strcpy(mensaje_procesado, ip_cliente), ": "), mensaje_enviar);
@@ -109,6 +109,7 @@ int enviar_paquete(char *puerto, char *direccion)
     int socket_servidor;                // El número de socket para la conexión con el servidor
     struct sockaddr_in direccion_envio; // Esto lo usaremos para conectarnos con el otro host (el servidor). La dirección la sacaremos de los argumentos de la función.
     char mensaje_recibido[1000];        // Aquí guardaremos el mensaje que recibimos
+    char mensaje_recibido_2[1000];        // Aquí guardaremos el mensaje que recibimos
     int error_check;                    // La usaremos para comprobar códigos de error
     int bytes_recibidos;                // Lo usaremos para saber la longitud del mensaje recibido
 
@@ -145,6 +146,15 @@ int enviar_paquete(char *puerto, char *direccion)
 
     while( (bytes_recibidos=recv(socket_servidor, mensaje_recibido, sizeof(char) * 1000, 0)) > 0 ) {
         printf("Recibidos %d bytes: %s\n", bytes_recibidos, mensaje_recibido);
+    }
+    printf("Recibidos %d bytes: %s\n", bytes_recibidos, mensaje_recibido);
+    bytes_recibidos = recv(socket_servidor, mensaje_recibido_2, sizeof(char) * 1000, 0); // Recibimos el mensaje
+
+    if (bytes_recibidos < 0) // Miramos si hubo error recibiendo el mensaje
+    {
+        perror("Error al recibir el mensaje");
+        close(socket_servidor); // Cerramos el socket de conexión al servidor
+        return (EXIT_FAILURE);
     }
 
     close(socket_servidor); // Cerramos el socket de conexión al servidor
