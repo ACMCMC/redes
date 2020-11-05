@@ -81,13 +81,14 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
         printf("%s\n", mensaje_procesado);
 
         bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * (strlen(mensaje_procesado) + 1), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
+        bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * (strlen(mensaje_procesado) + 1), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
 
         if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
         {
             perror("Error enviando la respuesta");
         }
 
-        printf("Enviados %d bytes: %s\n", bytes_enviados, mensaje_enviar); // Info para el usuario
+        printf("Enviados %d bytes (dos veces): %s\n", bytes_enviados, mensaje_enviar); // Info para el usuario
 
         close(socket_conexion); // Cerramos el socket para la conexión con el cliente
 
@@ -141,7 +142,7 @@ int enviar_paquete(char *puerto, char *direccion)
         close(socket_servidor); // Cerramos el socket de conexión al servidor
         return (EXIT_FAILURE);
     }
-
+sleep(1);
     bytes_recibidos = recv(socket_servidor, mensaje_recibido, sizeof(char) * 1000, 0); // Recibimos el mensaje
 
     if (bytes_recibidos < 0) // Miramos si hubo error recibiendo el mensaje
