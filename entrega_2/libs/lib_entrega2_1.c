@@ -77,7 +77,7 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
             return (EXIT_FAILURE);
         }
 
-        printf("Dirección: %s\n", ip_cliente); // Imprimimos la IP del cliente
+        printf("Conectado %s al puerto %d\n", ip_cliente, ntohs(direccion_cliente.sin_port)); // Imprimimos la IP del cliente
 
         mensaje_procesado = (char*) realloc(mensaje_procesado, sizeof(char) * (strlen(ip_cliente) + strlen(": ") + strlen(mensaje_enviar) + 1)); // Reservamos memoria para hacer el mensaje procesado. Reservamos la suma de la longitud de las cadenas (más 1, para el '0' del final).
         mensaje_procesado = strcat(strcat(strcpy(mensaje_procesado, ip_cliente), ": "), mensaje_enviar);
