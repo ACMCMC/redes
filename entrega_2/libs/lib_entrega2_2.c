@@ -66,7 +66,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
         fscanf(fp, "%s", linea);
 
         bytes_enviados = send(socket_servidor, linea, sizeof(char) * (strlen(linea) + 1), 0); // Enviamos la línea de texto al servidor
-
+sleep(1);
         if (bytes_enviados < 0) // Hubo un error
         {
             perror("Error enviando la línea");
@@ -149,7 +149,7 @@ int serv_mayusculas(char *puerto)
             perror("Error en inet_ntop");
             return (EXIT_FAILURE);
         }
-        printf("Conectado el cliente: %s\n", ip_cliente);
+        printf("Conectado el cliente %s al puerto %d\n", ip_cliente, ntohs(direccion_cliente.sin_port));
 
         while ((bytes_recibidos = recv(socket_conexion, mensaje_recibido, sizeof(char) * MAX_TAM_MSG, 0)) > 0)
         {
