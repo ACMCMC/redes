@@ -5,39 +5,31 @@
 #include <stdio.h>
 #include <ctype.h>
 
-/*
-Este programa es el programa del lado del servidor para el envío de una serie de caracteres en mayúsculas.
-*/
 int main(int argc, char **argv)
 {
 
     int opt;
     // port: Puerto
-    // direccion: IP del servidor. Solo se usa si soy un cliente
-    // mensaje_enviar: Si soy un servidor, qué mensaje enviarle a los que se me conectan
-    char *port = NULL, *file = NULL;
+    char *port = NULL;
 
     // Comprueba que exista al menos un operando
     // En caso de error salimos de la función main con el codigo EXIT_FAILURE
     if (argc < 2)
     {
         printf("Falta un operando\n");
-        printf("Usar: %s [-f El nombre del archivo de texto con las mayúsculas a enviar] [-p Numero de puerto, tanto si es servidor como cliente] [-h dirección del servidor, en caso de ser un cliente]\n", argv[0]);
+        printf("Usar: %s [-p, puerto del servidor]\n", argv[0]);
         return (EXIT_FAILURE);
     }
 
     // La funcion getopt() permite de forma facil manejar operandos en linea de comandos
     // Las opciones n: s: i: p: indican que esos "flags" (nsip) deben de ir seguidos de un argumento
     // Ese parametro se guarda en la variable externa optarg
-    while ((opt = getopt(argc, argv, "f:p:")) != -1)
+    while ((opt = getopt(argc, argv, "p:")) != -1)
     {
         switch (opt)
         {
-        case 'f':
-            file = optarg; // El host es un cliente
-            break;
         case 'p':
-            port = optarg; // IP del servidor. Solo se usa si soy un cliente
+            port = optarg; // Argumento numero de puerto
             break;
         case ':': // Se introdujo un flag sin argumento obligatorio
             fprintf(stderr, "La opción -%c requiere un argumento.\n", optopt);
@@ -57,9 +49,17 @@ int main(int argc, char **argv)
 
     printf("\n");
 
-    if (port && file) {
-        
+    // Llamamos a la función adecuada
+    if (port) {
+        if (serv_mayusculas(port) == EXIT_SUCCESS) {
+            exit(EXIT_SUCCESS);
+        } else
+        {
+            fprintf(stderr, "Error en la función del servidor de mayúsculas. No ha devuelto EXIT_SUCCESS.\n");
+            exit(EXIT_FAILURE);
+        }
     } else {
-        fprintf(stderr, "No se han especificado todos los parámetros necesarios.\n");
+        fprintf(stderr, "Debe especificarse un puerto\n");
+            exit(EXIT_FAILURE);
     }
 }

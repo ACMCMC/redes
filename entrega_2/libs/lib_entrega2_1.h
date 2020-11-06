@@ -2,6 +2,6 @@
 #define LIB_ENTREGA2
 
 int crear_servidor(char* puerto, char* mensaje_enviar);
-int enviar_paquete(char* puerto, char* direccion);
+int cliente(char* puerto, char* direccion);
 
 #endif

@@ -9,6 +9,9 @@
 #include <unistd.h>
 #include <stdio.h>
 
+#define MAX_CLIENTES_SERV 5
+#define MAX_TAM_MSG 100
+
 int crear_servidor(char *puerto, char *mensaje_enviar)
 {
     int socket_servidor, socket_conexion;
@@ -45,7 +48,7 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
 
     tam_direccion_cliente = sizeof(direccion_cliente);
 
-    while (total_mensajes < 5) // Vamos a contestar en total solo 5 solicitudes, este es un valor arbitrario
+    while (total_mensajes < MAX_CLIENTES_SERV) // Vamos a contestar en total solo 5 solicitudes, este es un valor arbitrario
     {
 
         socket_conexion = accept(socket_servidor, (struct sockaddr *)&direccion_cliente, &tam_direccion_cliente);
@@ -102,12 +105,12 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
     return (EXIT_SUCCESS); // Todo fue bien
 }
 
-int enviar_paquete(char *puerto, char *direccion)
+int cliente(char *puerto, char *direccion)
 {
 
     int socket_servidor;                // El número de socket para la conexión con el servidor
     struct sockaddr_in direccion_envio; // Esto lo usaremos para conectarnos con el otro host (el servidor). La dirección la sacaremos de los argumentos de la función.
-    char mensaje_recibido[1000];        // Aquí guardaremos el mensaje que recibimos
+    char mensaje_recibido[MAX_TAM_MSG];        // Aquí guardaremos el mensaje que recibimos
     int error_check;                    // La usaremos para comprobar códigos de error
     int bytes_recibidos;                // Lo usaremos para saber la longitud del mensaje recibido
 
@@ -116,6 +119,7 @@ int enviar_paquete(char *puerto, char *direccion)
     if (socket_servidor < 0)
     {
         perror("Error al crear el socket");
+        return (EXIT_FAILURE);
     }
 
     memset(&direccion_envio, 0, sizeof(direccion_envio));
@@ -142,7 +146,7 @@ int enviar_paquete(char *puerto, char *direccion)
         return (EXIT_FAILURE);
     }
 
-    bytes_recibidos = recv(socket_servidor, mensaje_recibido, sizeof(char) * 1000, 0); // Recibimos el mensaje
+    bytes_recibidos = recv(socket_servidor, mensaje_recibido, sizeof(char) * MAX_TAM_MSG, 0); // Recibimos el mensaje
 
     if (bytes_recibidos < 0) // Miramos si hubo error recibiendo el mensaje
     {

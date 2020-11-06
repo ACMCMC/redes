@@ -59,9 +59,9 @@ int main(int argc, char **argv)
         if (direccion)
         {
             printf("Este host es un cliente. Vamos a conectarnos al servidor.\n");
-            if (enviar_paquete(port, direccion) != EXIT_SUCCESS)
+            if (cliente(port, direccion) != EXIT_SUCCESS)
             {
-                fprintf(stderr, "Error ejecutando enviar_paquete\n");
+                fprintf(stderr, "Error ejecutando cliente\n");
             }
         }
         else
