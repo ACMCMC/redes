@@ -12,7 +12,10 @@
 #define MAX_CLIENTES_SERV 5
 #define MAX_TAM_MSG 100 // El tamaño máximo del mensaje, tanto en cliente como en servidor
 
-int crear_servidor(char *puerto, char *mensaje_enviar)
+/*
+Esta función crea un servidor en el puerto indicado, para responder a todos los clientes que se conecten a él con el mensaje que se le pasa como segundo parámetro. Si el segundo parámetro apunta a NULL, entonces se responde con un mensaje genérico
+*/
+int servidor(char *puerto, char *mensaje_enviar)
 {
     int socket_servidor, socket_conexion;                     // Los números de socket de servidor (escucha) y conexión con el cliente (porque estamos en TCP, así que establecemos un nuevo socket por cada conexión con cada cliente)
     struct sockaddr_in direccion_servidor, direccion_cliente; // Structs que usaremos para almacenar las direcciones de cliente y servidor
@@ -105,6 +108,9 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
     return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
 }
 
+/*
+Esta función se conecta al servidor con el puerto y la dirección que se le pasan en formato texto, e imprime por pantalla lo que recibe
+*/
 int cliente(char *puerto, char *direccion)
 {
 

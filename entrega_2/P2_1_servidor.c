@@ -57,9 +57,9 @@ int main(int argc, char **argv)
     if (port)
     {
         printf("Este host es un servidor. Vamos a aceptar conexiones entrantes.\n");
-        if (crear_servidor(port, mensaje_enviar) != EXIT_SUCCESS)
+        if (servidor(port, mensaje_enviar) != EXIT_SUCCESS)
         {
-            fprintf(stderr, "Error ejecutando crear_servidor\n");
+            fprintf(stderr, "Error ejecutando servidor\n");
         }
     }
     else

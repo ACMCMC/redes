@@ -4,15 +4,14 @@
 /*
 Función que realiza el lado del cliente del apartado 2 de la práctica.
 file: el archivo con los caracteres a enviar
-host: el archivo con los caracteres a enviar
-puerto: el puerto en el que queremos montar el socket
+host: la IP del servidor de mayúsculas
+puerto: el puerto de escucha en el servidor
 */
 int cliente_mayusculas(char* file, char* host, char* puerto);
 
 /*
 Función que realiza el lado del servidor del apartado 2 de la práctica.
-host: la IP a la que nos queremos conectar
-puerto: el puerto al que nos queremos conectar
+puerto: el puerto en el que queremos escuchar por conexiones entrantes
 */
 int serv_mayusculas(char* puerto);
 

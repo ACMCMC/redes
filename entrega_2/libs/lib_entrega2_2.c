@@ -13,6 +13,12 @@
 #define MAX_CLIENTES_SERV 5
 #define MAX_TAM_MSG 100 // El tamaño máximo del mensaje, tanto en cliente como en servidor
 
+/*
+Función que realiza el lado del cliente del apartado 2 de la práctica.
+file: el archivo con los caracteres a enviar
+host: la IP del servidor de mayúsculas
+puerto: el puerto de escucha en el servidor
+*/
 int cliente_mayusculas(char *file, char *host, char *puerto)
 {
     FILE *fp, *fp_out;
@@ -123,6 +129,10 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
     return (EXIT_SUCCESS);
 }
 
+/*
+Función que realiza el lado del servidor del apartado 2 de la práctica.
+puerto: el puerto en el que queremos escuchar por conexiones entrantes
+*/
 int serv_mayusculas(char *puerto)
 {
     int socket_servidor, socket_conexion, i;                  // Identificadores de los sockets y una variable auxiliar i
