@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         printf("Falta un operando\n");
-        printf("Usar: %s [-p, numero de puerto] [-m, el mensaje con el que responder]\n", argv[0]);
+        printf("Usar: %s [-p numero de puerto] [-m el mensaje con el que responder]\n", argv[0]);
         return (EXIT_FAILURE);
     }
 

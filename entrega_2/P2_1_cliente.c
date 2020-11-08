@@ -19,7 +19,7 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         printf("Falta un operando\n");
-        printf("Usar: %s [-h, dirección del servidor] [-p Numero de puerto, tanto si es servidor como cliente]\n", argv[0]);
+        printf("Usar: %s [-h dirección del servidor] [-p numero de puerto del servidor]\n", argv[0]);
         return (EXIT_FAILURE);
     }
 

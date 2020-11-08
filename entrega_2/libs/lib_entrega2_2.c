@@ -34,7 +34,6 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
     for (i = 0; i <= strlen(file); i++) {
         file_out[i] = toupper(file[i]);
     }
-    printf("%s\n", file_out);
     fp_out = fopen(file_out, "w");
     if (!fp)
     {
