@@ -18,7 +18,7 @@ $(OUTPUTS): $(OBJS)
 	gcc $(@:.out=.o) $(OBJS_HEADERS) -o $(@:.out=) -L $(HEADERS_DIR) $(ARGS)
 
 %.o: %.c
-	gcc -o $@ -c $< -L $(HEADERS_DIR) $(ARGS)
+	gcc -o $@ -c $< $(ARGS)
 
 clean:
 	-find . -type f -name '*.o' -delete

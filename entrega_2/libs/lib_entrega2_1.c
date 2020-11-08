@@ -18,7 +18,7 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
     struct sockaddr_in direccion_servidor, direccion_cliente; // Structs que usaremos para almacenar las direcciones de cliente y servidor
     socklen_t tam_direccion_cliente;
     ssize_t bytes_enviados;         // Lo usaremos para llevar la cuenta de cuántos bytes hemos enviado
-    int total_mensajes = 0;         // Lo usaremos para contar el total de solicitudes contestadas
+    int clientes_atendidos = 0;         // Lo usaremos para contar el total de solicitudes contestadas
     char *mensaje_procesado = NULL; // El mensaje procesado, es decir, el mensaje, pero con la IP del cliente añadida al principio. Esto no se exige en el enunciado de la práctica, pero creo que es buena idea tenerlo.
     char *ip_cliente = NULL;        // Aquí guardaremos la IP del cliente, pero en formato legible por humanos
 
@@ -48,7 +48,7 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
 
     tam_direccion_cliente = sizeof(direccion_cliente);
 
-    while (total_mensajes < MAX_CLIENTES_SERV) // Vamos a contestar en total solo 5 solicitudes, este es un valor arbitrario
+    while (clientes_atendidos < MAX_CLIENTES_SERV) // Vamos a contestar en total solo 5 solicitudes, este es un valor arbitrario
     {
 
         socket_conexion = accept(socket_servidor, (struct sockaddr *)&direccion_cliente, &tam_direccion_cliente);
@@ -81,7 +81,7 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
 
         mensaje_procesado = (char *)realloc(mensaje_procesado, sizeof(char) * (strlen(ip_cliente) + strlen(": ") + strlen(mensaje_enviar) + 1)); // Reservamos memoria para hacer el mensaje procesado. Reservamos la suma de la longitud de las cadenas (más 1, para el '0' del final).
         mensaje_procesado = strcat(strcat(strcpy(mensaje_procesado, ip_cliente), ": "), mensaje_enviar);
-        printf("%s\n", mensaje_procesado);
+        printf("%s\n", mensaje_procesado); // Construimos el mensaje de respuesta de la siguiente forma: "[IP CLIENTE]: [MENSAJE]"
 
         bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * (strlen(mensaje_procesado) + 1), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
 
@@ -94,7 +94,7 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
 
         close(socket_conexion); // Cerramos el socket para la conexión con el cliente
 
-        total_mensajes++;
+        clientes_atendidos++; // Incrementamos el contador de clientes atendidos
     }
 
     close(socket_servidor); // Cerramos el socket del servidor
@@ -102,7 +102,7 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
     free(mensaje_procesado); // Liberamos memoria
     free(ip_cliente);
 
-    return (EXIT_SUCCESS); // Todo fue bien
+    return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
 }
 
 int cliente(char *puerto, char *direccion)
@@ -112,7 +112,7 @@ int cliente(char *puerto, char *direccion)
     struct sockaddr_in direccion_envio; // Esto lo usaremos para conectarnos con el otro host (el servidor). La dirección la sacaremos de los argumentos de la función.
     char mensaje_recibido[MAX_TAM_MSG]; // Aquí guardaremos el mensaje que recibimos
     int error_check;                    // La usaremos para comprobar códigos de error
-    int bytes_recibidos;                // Lo usaremos para saber la longitud del mensaje recibido
+    ssize_t bytes_recibidos;                // Lo usaremos para saber la longitud del mensaje recibido
 
     socket_servidor = socket(AF_INET, SOCK_STREAM, 0); // Creamos un socket para conectarnos al servidor
 
@@ -146,7 +146,7 @@ int cliente(char *puerto, char *direccion)
         return (EXIT_FAILURE);
     }
 
-    bytes_recibidos = recv(socket_servidor, mensaje_recibido, sizeof(char) * MAX_TAM_MSG, 0); // Recibimos el mensaje
+    bytes_recibidos = recv(socket_servidor, mensaje_recibido, sizeof(char) * MAX_TAM_MSG, 0); // Recibimos el mensaje. socket_servidor: identificador del socket, mensaje_recibido: puntero al string donde guardaremos la respuesta, el tercer parámetro es el tamaño máximo del mensaje que podemos guardar en esa cadena, y el 4o es 0 porque no queremos especificar ningún flag
 
     if (bytes_recibidos < 0) // Miramos si hubo error recibiendo el mensaje
     {
@@ -159,7 +159,7 @@ int cliente(char *puerto, char *direccion)
 
     // No hace falta liberar memoria
 
-    printf("Recibidos %d bytes: %s\n", bytes_recibidos, mensaje_recibido);
+    printf("Recibidos %zd bytes: %s\n", bytes_recibidos, mensaje_recibido);
 
     return (EXIT_SUCCESS);
 }

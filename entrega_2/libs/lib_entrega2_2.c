@@ -48,6 +48,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
     {
         perror("Error al crear el socket");
         fclose(fp);
+        fclose(fp_out);
         return (EXIT_FAILURE);
     }
 
@@ -66,6 +67,8 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
             fprintf(stderr, "La dirección IP especificada no es válida.\n");
         }
         fclose(fp);
+        fclose(fp_out);
+        close(socket_servidor);
         return (EXIT_FAILURE);
     }
 
@@ -74,42 +77,46 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
         perror("Error al conectarse al servidor");
         close(socket_servidor); // Cerramos el socket de conexión al servidor
         fclose(fp);
+        fclose(fp_out);
         return (EXIT_FAILURE);
     }
 
     while (!feof(fp) && (fgets(linea, MAX_TAM_MSG, fp) != NULL))
     { // Repetimos esto mientras queden líneas en el archivo
 
-        bytes_enviados = send(socket_servidor, linea, sizeof(char) * (strlen(linea) + 1), 0); // Enviamos la línea de texto al servidor
+        bytes_enviados = send(socket_servidor, linea, sizeof(char) * (strnlen(linea, MAX_TAM_MSG) + 1), 0); // Enviamos la línea de texto al servidor. socket_servidor: identificador del socket, linea: la cadena de texto, el tercer parámetro es su longitud, y el 4o es un 0 porque no especificamos flags
 
         if (bytes_enviados < 0) // Hubo un error
         {
             perror("Error enviando la línea");
             close(socket_servidor); // Cerramos el socket de conexión al servidor
             fclose(fp);
+            fclose(fp_out);
             return (EXIT_FAILURE);
         }
 
-        bytes_recibidos = recv(socket_servidor, linea_respuesta, sizeof(char) * MAX_TAM_MSG, 0); // Recibimos el mensaje
+        bytes_recibidos = recv(socket_servidor, linea_respuesta, sizeof(char) * MAX_TAM_MSG, 0); // Recibimos el mensaje. socket_servidor: identificador del socket, linea_respuesta: puntero al string donde guardaremos la línea en minúsculas que nos mandó el cliente, y que vamos a convertir a mayúsculas (por eso la llamo línea_respuesta, al principio es la recepción, pero posteriormente esa misma línea pero en mayúsculas va a ser con la que respondamos al cliente), el tercer parámetro es el tamaño máximo del mensaje que podemos guardar en esa cadena, y el 4o es 0 porque no queremos especificar ningún flag
 
         if (bytes_recibidos < 0) // Miramos si hubo error recibiendo el mensaje
         {
             perror("Error al recibir el mensaje");
             close(socket_servidor); // Cerramos el socket de conexión al servidor
+            fclose(fp);
+            fclose(fp_out);
             return (EXIT_FAILURE);
         }
 
         fputs(linea_respuesta, fp_out);
 
-        if (linea_respuesta[strlen(linea_respuesta) - 1] == '\n' && linea[strlen(linea) - 1] == '\n')
+        if (linea_respuesta[strnlen(linea_respuesta, MAX_TAM_MSG) - 1] == '\n' && linea[strnlen(linea, MAX_TAM_MSG) - 1] == '\n')
         { // fgets también lee el carácter de nueva línea, y eso antes se lo enviamos también al servidor, pero de cara a hacer el printf revisamos si la cadena acaba en '\n', y en caso afirmativo, la reemplazamos por '\0', para que la presentación sea más bonita y no tengamos un salto extraño de línea. Si la línea que mandamos acaba en '\n' antes del '0', la que recibimos también, pero siempre es mejor asegurarse.
-            linea[strlen(linea) - 1] = '\0';
-            linea_respuesta[strlen(linea_respuesta) - 1] = '\0';
+            linea[strnlen(linea, MAX_TAM_MSG) - 1] = '\0';
+            linea_respuesta[strnlen(linea_respuesta, MAX_TAM_MSG) - 1] = '\0';
         }
-        printf("\nEnviados %zd bytes: %s.\n\tRecibidos %zd bytes: %s\n", bytes_enviados, linea, bytes_recibidos, linea_respuesta);
+        printf("\nEnviados %zd bytes: %s.\n\tRecibidos %zd bytes: %s\n", bytes_enviados, linea, bytes_recibidos, linea_respuesta); // Imprimimos los mensajes por consola
     }
 
-    close(socket_servidor);
+    close(socket_servidor); // Cerramos el socket del servidor y los archivos
     fclose(fp);
     fclose(fp_out);
 
@@ -118,16 +125,16 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
 
 int serv_mayusculas(char *puerto)
 {
-    int socket_servidor, socket_conexion, i;
-    ssize_t bytes_recibidos, bytes_enviados;
-    int num_clientes = 0;
-    struct sockaddr_in direccion_servidor, direccion_cliente;
-    socklen_t tam_direccion_cliente;
-    char mensaje_recibido[MAX_TAM_MSG];
-    char mensaje_procesado[MAX_TAM_MSG];
-    char *ip_cliente = NULL;
+    int socket_servidor, socket_conexion, i;                  // Identificadores de los sockets y una variable auxiliar i
+    ssize_t bytes_recibidos, bytes_enviados;                  // Lo guardaremos para llevar información de contabilidad, lo imprimiremos por consola
+    int num_clientes = 0;                                     // El número de clientes que son atendidos
+    struct sockaddr_in direccion_servidor, direccion_cliente; // Aquí guardamos las direcciones tanto de cliente como servidor
+    socklen_t tam_direccion_cliente;                          // Aquí guardaremos el tamaño de la dirección del cliente, que será de entrada y salida a accept()
+    char mensaje_recibido[MAX_TAM_MSG];                       // El mensaje en minúsculas
+    char mensaje_procesado[MAX_TAM_MSG];                      // El mensaje en mayúsculas
+    char *ip_cliente = NULL;                                  // La IP del cliente en formato humano
 
-    socket_servidor = socket(AF_INET, SOCK_STREAM, 0);
+    socket_servidor = socket(AF_INET, SOCK_STREAM, 0); // Creamos el socket de escucha de conexiones
     if (socket_servidor < 0)
     {
         perror("Error al crear el socket");
@@ -141,21 +148,23 @@ int serv_mayusculas(char *puerto)
     if (bind(socket_servidor, (struct sockaddr *)&direccion_servidor, sizeof(direccion_servidor)) < 0)
     {
         perror("No se ha podido asignar la dirección al socket");
+        close(socket_servidor);
         return (EXIT_FAILURE);
     }
 
     if (listen(socket_servidor, 5) != 0) // Marcamos el socket como pasivo, para que pueda escuchar conexiones de clientes. Se pueden mantener hasta 5 en cola de espera.
     {
         perror("Error abriendo el socket para escucha");
+        close(socket_servidor);
         return (EXIT_FAILURE);
     }
 
-    tam_direccion_cliente = sizeof(direccion_cliente);
+    tam_direccion_cliente = sizeof(struct sockaddr_in); // Parámetro de entrada a accept()
 
     while (num_clientes < MAX_CLIENTES_SERV) // Vamos a contestar en total solo 5 clientes, este es un valor arbitrario
     {
 
-        socket_conexion = accept(socket_servidor, (struct sockaddr *)&direccion_cliente, &tam_direccion_cliente);
+        socket_conexion = accept(socket_servidor, (struct sockaddr *)&direccion_cliente, &tam_direccion_cliente); // socket_servidor es el identificador del socket donde escuchamos conexiones, &direccion_cliente es un puntero a un struct sockaddr donde guardaremos la dirección del cliente que se conecta, &tam_direccion_cliente es un parámetro de entrada y salida a la función que nos indica (como entrada) el tamaño de la estructura direccion_cliente (es un sockaddr_in), y que como salida nos indica el tamaño que se ha consumido realmente
 
         if (socket_conexion < 0) // Hubo un error, abortamos
         {
@@ -165,8 +174,8 @@ int serv_mayusculas(char *puerto)
             return (EXIT_FAILURE);
         }
 
-        ip_cliente = (char *)realloc(ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN);
-        if (inet_ntop(direccion_cliente.sin_family, (void *)&(direccion_cliente.sin_addr), ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN) == NULL)
+        ip_cliente = (char *)realloc(ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN);                                                               // Guardamos espacio para la IP del cliente en formato texto
+        if (inet_ntop(direccion_cliente.sin_family, (void *)&(direccion_cliente.sin_addr), ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN) == NULL) // Convertimos la IP del cliente a formato texto
         {
             close(socket_conexion); // Hubo un error, abortamos. Cerramos los sockets antes de salir
             close(socket_servidor);
@@ -184,7 +193,7 @@ int serv_mayusculas(char *puerto)
             }
             mensaje_procesado[i] = '\0'; // Introducimos el terminador de cadena en el mensaje procesado
 
-            bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * (strlen(mensaje_procesado) + 1), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
+            bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * (strnlen(mensaje_procesado, MAX_TAM_MSG) + 1), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
 
             if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
             {
@@ -207,6 +216,8 @@ int serv_mayusculas(char *puerto)
     }
 
     close(socket_servidor); // Cerramos el socket del servidor
+
+    free(ip_cliente);
 
     return (EXIT_SUCCESS);
 }
