@@ -50,16 +50,21 @@ int main(int argc, char **argv)
     printf("\n");
 
     // Llamamos a la función adecuada
-    if (port) {
-        if (serv_mayusculas(port) == EXIT_SUCCESS) {
+    if (port)
+    {
+        if (serv_mayusculas(port) == EXIT_SUCCESS)
+        {
             exit(EXIT_SUCCESS);
-        } else
+        }
+        else
         {
             fprintf(stderr, "Error en la función del servidor de mayúsculas. No ha devuelto EXIT_SUCCESS.\n");
             exit(EXIT_FAILURE);
         }
-    } else {
+    }
+    else
+    {
         fprintf(stderr, "Debe especificarse un puerto\n");
-            exit(EXIT_FAILURE);
+        exit(EXIT_FAILURE);
     }
 }

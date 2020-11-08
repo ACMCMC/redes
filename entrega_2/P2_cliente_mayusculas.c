@@ -58,15 +58,20 @@ int main(int argc, char **argv)
     printf("\n");
 
     // Llamamos a la función adecuada
-    if (direccion && port && arch_enviar) {
-        if (cliente_mayusculas(arch_enviar, direccion, port) == EXIT_SUCCESS) {
+    if (direccion && port && arch_enviar)
+    {
+        if (cliente_mayusculas(arch_enviar, direccion, port) == EXIT_SUCCESS)
+        {
             exit(EXIT_SUCCESS);
-        } else
+        }
+        else
         {
             fprintf(stderr, "Error en la función del cliente de mayúsculas. No ha devuelto EXIT_SUCCESS.\n");
             exit(EXIT_FAILURE);
         }
-    } else {
+    }
+    else
+    {
         fprintf(stderr, "Argumentos mal especificados.\n");
         exit(EXIT_FAILURE);
     }

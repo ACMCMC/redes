@@ -11,7 +11,7 @@
 #include <ctype.h>
 
 #define MAX_CLIENTES_SERV 5
-#define MAX_TAM_MSG 100
+#define MAX_TAM_MSG 100 // El tamaño máximo del mensaje, tanto en cliente como en servidor
 
 int cliente_mayusculas(char *file, char *host, char *puerto)
 {
@@ -30,8 +30,9 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
         return (EXIT_FAILURE);
     }
 
-    file_out = (char *) malloc(sizeof(char)*(strlen(file) + 1));
-    for (i = 0; i <= strlen(file); i++) {
+    file_out = (char *)malloc(sizeof(char) * (strlen(file) + 1));
+    for (i = 0; i <= strlen(file); i++)
+    {
         file_out[i] = toupper(file[i]);
     }
     fp_out = fopen(file_out, "w");
@@ -50,9 +51,9 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
         return (EXIT_FAILURE);
     }
 
-    memset(&direccion_envio, 0, sizeof(direccion_envio));
-    direccion_envio.sin_family = AF_INET;
-    direccion_envio.sin_port = htons(atoi(puerto));
+    memset(&direccion_envio, 0, sizeof(direccion_envio)); // La estructura tiene todo 0s
+    direccion_envio.sin_family = AF_INET;                 // IPv4
+    direccion_envio.sin_port = htons(atoi(puerto));       // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
 
     if ((error_check = inet_pton(AF_INET, host, &(direccion_envio.sin_addr))) != 1) // Convertimos la ip de formato texto a formato máquina
     {
@@ -76,9 +77,8 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
         return (EXIT_FAILURE);
     }
 
-    while (!feof(fp))
+    while (!feof(fp) && (fgets(linea, MAX_TAM_MSG, fp) != NULL))
     { // Repetimos esto mientras queden líneas en el archivo
-        fgets(linea, MAX_TAM_MSG, fp);
 
         bytes_enviados = send(socket_servidor, linea, sizeof(char) * (strlen(linea) + 1), 0); // Enviamos la línea de texto al servidor
 
@@ -101,7 +101,8 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
 
         fputs(linea_respuesta, fp_out);
 
-        if (linea_respuesta[strlen(linea_respuesta) - 1] == '\n' && linea[strlen(linea) - 1] == '\n') { // fgets también lee el carácter de nueva línea, y eso antes se lo enviamos también al servidor, pero de cara a hacer el printf revisamos si la cadena acaba en '\n', y en caso afirmativo, la reemplazamos por '\0', para que la presentación sea más bonita y no tengamos un salto extraño de línea. Si la línea que mandamos acaba en '\n' antes del '0', la que recibimos también, pero siempre es mejor asegurarse.
+        if (linea_respuesta[strlen(linea_respuesta) - 1] == '\n' && linea[strlen(linea) - 1] == '\n')
+        { // fgets también lee el carácter de nueva línea, y eso antes se lo enviamos también al servidor, pero de cara a hacer el printf revisamos si la cadena acaba en '\n', y en caso afirmativo, la reemplazamos por '\0', para que la presentación sea más bonita y no tengamos un salto extraño de línea. Si la línea que mandamos acaba en '\n' antes del '0', la que recibimos también, pero siempre es mejor asegurarse.
             linea[strlen(linea) - 1] = '\0';
             linea_respuesta[strlen(linea_respuesta) - 1] = '\0';
         }
@@ -132,10 +133,10 @@ int serv_mayusculas(char *puerto)
         perror("Error al crear el socket");
     }
 
-    memset(&direccion_servidor, 0, sizeof(direccion_servidor));
-    direccion_servidor.sin_family = AF_INET;
-    direccion_servidor.sin_port = htons(atoi(puerto));
-    direccion_servidor.sin_addr.s_addr = htonl(INADDR_ANY);
+    memset(&direccion_servidor, 0, sizeof(direccion_servidor)); // Llenamos la estructura de 0s
+    direccion_servidor.sin_family = AF_INET;                    // IPv4
+    direccion_servidor.sin_port = htons(atoi(puerto));          // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
+    direccion_servidor.sin_addr.s_addr = htonl(INADDR_ANY);     // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
 
     if (bind(socket_servidor, (struct sockaddr *)&direccion_servidor, sizeof(direccion_servidor)) < 0)
     {
@@ -143,7 +144,7 @@ int serv_mayusculas(char *puerto)
         return (EXIT_FAILURE);
     }
 
-    if (listen(socket_servidor, 5) != 0)
+    if (listen(socket_servidor, 5) != 0) // Marcamos el socket como pasivo, para que pueda escuchar conexiones de clientes. Se pueden mantener hasta 5 en cola de espera.
     {
         perror("Error abriendo el socket para escucha");
         return (EXIT_FAILURE);
@@ -172,12 +173,12 @@ int serv_mayusculas(char *puerto)
             perror("Error en inet_ntop");
             return (EXIT_FAILURE);
         }
-        printf("Conectado el cliente %s al puerto %d\n", ip_cliente, ntohs(direccion_cliente.sin_port));
+        printf("Conectado el cliente %s al puerto %d\n", ip_cliente, ntohs(direccion_cliente.sin_port)); // Mensaje por consola
 
         while ((bytes_recibidos = recv(socket_conexion, mensaje_recibido, sizeof(char) * MAX_TAM_MSG, 0)) > 0)
         {
 
-            for (i = 0; i < (int) strnlen(mensaje_recibido, MAX_TAM_MSG); i++)
+            for (i = 0; i < (int)strnlen(mensaje_recibido, MAX_TAM_MSG); i++) // Pasamos el mensaje a mayúsculas
             {
                 mensaje_procesado[i] = toupper(mensaje_recibido[i]);
             }

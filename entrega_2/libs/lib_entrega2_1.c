@@ -10,17 +10,17 @@
 #include <stdio.h>
 
 #define MAX_CLIENTES_SERV 5
-#define MAX_TAM_MSG 100
+#define MAX_TAM_MSG 100 // El tamaño máximo del mensaje, tanto en cliente como en servidor
 
 int crear_servidor(char *puerto, char *mensaje_enviar)
 {
-    int socket_servidor, socket_conexion;
-    struct sockaddr_in direccion_servidor, direccion_cliente;
+    int socket_servidor, socket_conexion;                     // Los números de socket de servidor (escucha) y conexión con el cliente (porque estamos en TCP, así que establecemos un nuevo socket por cada conexión con cada cliente)
+    struct sockaddr_in direccion_servidor, direccion_cliente; // Structs que usaremos para almacenar las direcciones de cliente y servidor
     socklen_t tam_direccion_cliente;
-    int bytes_enviados;     // Lo usaremos para llevar la cuenta de cuántos bytes hemos enviado
-    int total_mensajes = 0; // Lo usaremos para contar el total de solicitudes contestadas
-    char *mensaje_procesado = NULL;
-    char *ip_cliente = NULL;
+    ssize_t bytes_enviados;         // Lo usaremos para llevar la cuenta de cuántos bytes hemos enviado
+    int total_mensajes = 0;         // Lo usaremos para contar el total de solicitudes contestadas
+    char *mensaje_procesado = NULL; // El mensaje procesado, es decir, el mensaje, pero con la IP del cliente añadida al principio. Esto no se exige en el enunciado de la práctica, pero creo que es buena idea tenerlo.
+    char *ip_cliente = NULL;        // Aquí guardaremos la IP del cliente, pero en formato legible por humanos
 
     socket_servidor = socket(AF_INET, SOCK_STREAM, 0);
 
@@ -29,10 +29,10 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
         perror("Error al crear el socket");
     }
 
-    memset(&direccion_servidor, 0, sizeof(direccion_servidor));
-    direccion_servidor.sin_family = AF_INET;
-    direccion_servidor.sin_port = htons(atoi(puerto));
-    direccion_servidor.sin_addr.s_addr = htonl(INADDR_ANY);
+    memset(&direccion_servidor, 0, sizeof(direccion_servidor)); // Llenamos la estructura de 0s
+    direccion_servidor.sin_family = AF_INET;                    // IPv4
+    direccion_servidor.sin_port = htons(atoi(puerto));          // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
+    direccion_servidor.sin_addr.s_addr = htonl(INADDR_ANY);     // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
 
     if (bind(socket_servidor, (struct sockaddr *)&direccion_servidor, sizeof(direccion_servidor)) < 0)
     {
@@ -40,7 +40,7 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
         return (EXIT_FAILURE);
     }
 
-    if (listen(socket_servidor, 5) != 0)
+    if (listen(socket_servidor, 5) != 0) // Marcamos el socket como pasivo, para que pueda escuchar conexiones de clientes. Se pueden mantener hasta 5 en cola de espera.
     {
         perror("Error abriendo el socket para escucha");
         return (EXIT_FAILURE);
@@ -79,7 +79,7 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
 
         printf("Conectado %s al puerto %d\n", ip_cliente, ntohs(direccion_cliente.sin_port)); // Imprimimos la IP del cliente
 
-        mensaje_procesado = (char*) realloc(mensaje_procesado, sizeof(char) * (strlen(ip_cliente) + strlen(": ") + strlen(mensaje_enviar) + 1)); // Reservamos memoria para hacer el mensaje procesado. Reservamos la suma de la longitud de las cadenas (más 1, para el '0' del final).
+        mensaje_procesado = (char *)realloc(mensaje_procesado, sizeof(char) * (strlen(ip_cliente) + strlen(": ") + strlen(mensaje_enviar) + 1)); // Reservamos memoria para hacer el mensaje procesado. Reservamos la suma de la longitud de las cadenas (más 1, para el '0' del final).
         mensaje_procesado = strcat(strcat(strcpy(mensaje_procesado, ip_cliente), ": "), mensaje_enviar);
         printf("%s\n", mensaje_procesado);
 
@@ -90,7 +90,7 @@ int crear_servidor(char *puerto, char *mensaje_enviar)
             perror("Error enviando la respuesta");
         }
 
-        printf("Enviados %d bytes: %s\n", bytes_enviados, mensaje_enviar); // Info para el usuario
+        printf("Enviados %zd bytes: %s\n", bytes_enviados, mensaje_enviar); // Info para el usuario
 
         close(socket_conexion); // Cerramos el socket para la conexión con el cliente
 
@@ -110,7 +110,7 @@ int cliente(char *puerto, char *direccion)
 
     int socket_servidor;                // El número de socket para la conexión con el servidor
     struct sockaddr_in direccion_envio; // Esto lo usaremos para conectarnos con el otro host (el servidor). La dirección la sacaremos de los argumentos de la función.
-    char mensaje_recibido[MAX_TAM_MSG];        // Aquí guardaremos el mensaje que recibimos
+    char mensaje_recibido[MAX_TAM_MSG]; // Aquí guardaremos el mensaje que recibimos
     int error_check;                    // La usaremos para comprobar códigos de error
     int bytes_recibidos;                // Lo usaremos para saber la longitud del mensaje recibido
 
