@@ -15,18 +15,33 @@
 
 int cliente_mayusculas(char *file, char *host, char *puerto)
 {
-    FILE *fp;
+    FILE *fp, *fp_out;
     int socket_servidor, error_check;
+    unsigned long i;
     ssize_t bytes_enviados, bytes_recibidos;
     struct sockaddr_in direccion_envio;
     char linea[MAX_TAM_MSG], linea_respuesta[MAX_TAM_MSG];
+    char *file_out;
 
     fp = fopen(file, "r");
     if (!fp)
     {
-        perror("Error abriendo el archivo. Abortamos.");
+        perror("Error abriendo el archivo de lectura. Abortamos.");
         return (EXIT_FAILURE);
     }
+
+    file_out = (char *) malloc(sizeof(char)*(strlen(file) + 1));
+    for (i = 0; i <= strlen(file); i++) {
+        file_out[i] = toupper(file[i]);
+    }
+    printf("%s\n", file_out);
+    fp_out = fopen(file_out, "w");
+    if (!fp)
+    {
+        perror("Error abriendo el archivo de escritura. Abortamos.");
+        return (EXIT_FAILURE);
+    }
+    free(file_out);
 
     socket_servidor = socket(AF_INET, SOCK_STREAM, 0); // Creamos un socket para conectarnos al servidor
     if (socket_servidor < 0)
@@ -65,9 +80,6 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
     while (!feof(fp))
     { // Repetimos esto mientras queden líneas en el archivo
         fgets(linea, MAX_TAM_MSG, fp);
-        if (linea[strlen(linea) - 1] == '\n') { // fgets también lee el carácter de nueva línea, así que revisamos si la cadena acaba en '\n', y en caso afirmativo, lo reemplazamos por '\0'
-            linea[strlen(linea) - 1] = '\0';
-        }
 
         bytes_enviados = send(socket_servidor, linea, sizeof(char) * (strlen(linea) + 1), 0); // Enviamos la línea de texto al servidor
 
@@ -88,11 +100,18 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
             return (EXIT_FAILURE);
         }
 
+        fputs(linea_respuesta, fp_out);
+
+        if (linea_respuesta[strlen(linea_respuesta) - 1] == '\n' && linea[strlen(linea) - 1] == '\n') { // fgets también lee el carácter de nueva línea, y eso antes se lo enviamos también al servidor, pero de cara a hacer el printf revisamos si la cadena acaba en '\n', y en caso afirmativo, la reemplazamos por '\0', para que la presentación sea más bonita y no tengamos un salto extraño de línea. Si la línea que mandamos acaba en '\n' antes del '0', la que recibimos también, pero siempre es mejor asegurarse.
+            linea[strlen(linea) - 1] = '\0';
+            linea_respuesta[strlen(linea_respuesta) - 1] = '\0';
+        }
         printf("\nEnviados %zd bytes: %s.\n\tRecibidos %zd bytes: %s\n", bytes_enviados, linea, bytes_recibidos, linea_respuesta);
     }
 
     close(socket_servidor);
     fclose(fp);
+    fclose(fp_out);
 
     return (EXIT_SUCCESS);
 }
