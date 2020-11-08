@@ -16,7 +16,8 @@
 int cliente_mayusculas(char *file, char *host, char *puerto)
 {
     FILE *fp;
-    int socket_servidor, error_check, bytes_enviados, bytes_recibidos;
+    int socket_servidor, error_check;
+    ssize_t bytes_enviados, bytes_recibidos;
     struct sockaddr_in direccion_envio;
     char linea[MAX_TAM_MSG], linea_respuesta[MAX_TAM_MSG];
 
@@ -63,10 +64,13 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
 
     while (!feof(fp))
     { // Repetimos esto mientras queden líneas en el archivo
-        fscanf(fp, "%s", linea);
+        fgets(linea, MAX_TAM_MSG, fp);
+        if (linea[strlen(linea) - 1] == '\n') { // fgets también lee el carácter de nueva línea, así que revisamos si la cadena acaba en '\n', y en caso afirmativo, lo reemplazamos por '\0'
+            linea[strlen(linea) - 1] = '\0';
+        }
 
         bytes_enviados = send(socket_servidor, linea, sizeof(char) * (strlen(linea) + 1), 0); // Enviamos la línea de texto al servidor
-sleep(1);
+
         if (bytes_enviados < 0) // Hubo un error
         {
             perror("Error enviando la línea");
@@ -84,7 +88,7 @@ sleep(1);
             return (EXIT_FAILURE);
         }
 
-        printf("\nEnviados %d bytes: %s.\n\tRecibidos %d bytes: %s\n", bytes_enviados, linea, bytes_recibidos, linea_respuesta);
+        printf("\nEnviados %zd bytes: %s.\n\tRecibidos %zd bytes: %s\n", bytes_enviados, linea, bytes_recibidos, linea_respuesta);
     }
 
     close(socket_servidor);
@@ -95,7 +99,8 @@ sleep(1);
 
 int serv_mayusculas(char *puerto)
 {
-    int socket_servidor, socket_conexion, bytes_recibidos, bytes_enviados, i;
+    int socket_servidor, socket_conexion, i;
+    ssize_t bytes_recibidos, bytes_enviados;
     int num_clientes = 0;
     struct sockaddr_in direccion_servidor, direccion_cliente;
     socklen_t tam_direccion_cliente;
@@ -167,7 +172,7 @@ int serv_mayusculas(char *puerto)
                 perror("Error enviando la respuesta");
             }
 
-            printf("Enviados %d bytes: %s\n", bytes_enviados, mensaje_procesado); // Info para el usuario
+            printf("Enviados %zd bytes: %s\n", bytes_enviados, mensaje_procesado); // Info para el usuario
         }
 
         if (bytes_recibidos < 0)
