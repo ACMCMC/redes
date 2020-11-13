@@ -21,8 +21,7 @@ int sender(char *puerto_propio, char *mensaje_enviar, char *ip_receptor, char *p
     int socket_propio_envio;                           // Los números de socket de servidor (escucha) y conexión con el receptor (porque estamos en TCP, así que establecemos un nuevo socket por cada conexión con cada receptor)
     struct sockaddr_in socket_propio, socket_receptor; // Structs que usaremos para almacenar las direcciones de receptor y servidor
     socklen_t tamano_sock_receptor;
-    ssize_t bytes_enviados;           // Lo usaremos para llevar la cuenta de cuántos bytes hemos enviado
-    char ip_cliente[INET_ADDRSTRLEN]; // Aquí guardaremos la IP del receptor, pero en formato legible por humanos
+    ssize_t bytes_enviados; // Lo usaremos para llevar la cuenta de cuántos bytes hemos enviado
 
     socket_propio_envio = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -54,7 +53,7 @@ int sender(char *puerto_propio, char *mensaje_enviar, char *ip_receptor, char *p
 
     tamano_sock_receptor = sizeof(socket_receptor);
 
-    if (inet_ntop(socket_propio.sin_family, (void *)&(socket_receptor.sin_addr), ip_cliente, INET_ADDRSTRLEN) == NULL)
+    if (inet_ntop(socket_receptor.sin_family, (void *)&(socket_receptor.sin_addr), ip_receptor, INET_ADDRSTRLEN) == NULL)
     {
         close(socket_propio_envio); // Hubo un error, abortamos. Cerramos los sockets antes de salir
         perror("Error en inet_ntop");
@@ -82,11 +81,12 @@ Esta función se conecta al servidor con el puerto_propio y la dirección que se
 int receptor(char *puerto)
 {
 
-    int id_socket_propio;                // El número de socket para la conexión con el servidor
+    int id_socket_propio;                            // El número de socket para la conexión con el servidor
     struct sockaddr_in socket_sender, socket_propio; // Esto lo usaremos para conectarnos con el otro host (el servidor). La dirección la sacaremos de los argumentos de la función.
     socklen_t tam_socket_sender;
     char mensaje_recibido[MAX_TAM_MSG]; // Aquí guardaremos el mensaje que recibimos
     ssize_t bytes_recibidos;            // Lo usaremos para saber la longitud del mensaje recibido
+    char *ip_sender = NULL;
 
     printf("Este host es el que recibe. Vamos a escuchar en el puerto " ANSI_COLOR_CYAN "%s" ANSI_COLOR_RESET ".\n", puerto);
 
@@ -102,7 +102,7 @@ int receptor(char *puerto)
     socket_propio.sin_family = AF_INET;
     socket_propio.sin_port = htons(atoi(puerto));
     socket_propio.sin_addr.s_addr = INADDR_ANY;
-    
+
     if (bind(id_socket_propio, (struct sockaddr *)&socket_propio, sizeof(socket_propio)) < 0)
     {
         perror("No se ha podido asignar la dirección al socket");
@@ -111,8 +111,9 @@ int receptor(char *puerto)
 
     memset(&socket_sender, 0, sizeof(struct sockaddr_in));
     socket_sender.sin_family = AF_INET;
+    tam_socket_sender = sizeof(struct sockaddr_in);
 
-    bytes_recibidos = recvfrom(id_socket_propio, mensaje_recibido, sizeof(mensaje_recibido), 0, (struct sockaddr*) &socket_sender, &tam_socket_sender);
+    bytes_recibidos = recvfrom(id_socket_propio, mensaje_recibido, sizeof(mensaje_recibido), 0, (struct sockaddr *)&socket_sender, &tam_socket_sender);
 
     if (bytes_recibidos < 0) // Miramos si hubo error recibiendo el mensaje
     {
@@ -123,9 +124,14 @@ int receptor(char *puerto)
 
     close(id_socket_propio); // Cerramos el socket de conexión al servidor
 
-    // No hace falta liberar memoria
+    ip_sender = (char *)realloc(ip_sender, (socket_sender.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN);
+    if (inet_ntop(socket_sender.sin_family, (void *)&(socket_sender.sin_addr), ip_sender, (socket_sender.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN) == NULL)
+    {
+        perror("Error en inet_ntop");
+        return (EXIT_FAILURE);
+    }
 
-    printf(ANSI_COLOR_GREEN "Recibidos %zd bytes" ANSI_COLOR_RESET ": %s\n", bytes_recibidos, mensaje_recibido);
+    printf(ANSI_COLOR_GREEN "Recibidos %zd bytes de " ANSI_COLOR_BLUE "%s" ANSI_COLOR_RESET ":" ANSI_COLOR_CYAN "%d" ANSI_COLOR_RESET ": %s\n", bytes_recibidos, ip_sender, ntohs(socket_sender.sin_port), mensaje_recibido);
 
     return (EXIT_SUCCESS);
 }
