@@ -15,14 +15,13 @@
 /*
 Esta función crea un servidor en el puerto indicado, para responder a todos los clientes que se conecten a él con el mensaje que se le pasa como segundo parámetro. Si el segundo parámetro apunta a NULL, entonces se responde con un mensaje genérico
 */
-int servidor(char *puerto, char *mensaje_enviar, char* ip_receptor)
+int sender(char *puerto, char *mensaje_enviar, char *ip_receptor, char * puerto_receptor)
 {
-    int socket_propio_envio, socket_receptor;                     // Los números de socket de servidor (escucha) y conexión con el cliente (porque estamos en TCP, así que establecemos un nuevo socket por cada conexión con cada cliente)
+    printf("Este host es el que envía. Vamos a enviar el mensaje a " ANSI_COLOR_BLUE "%s" ANSI_COLOR_RESET ":" ANSI_COLOR_YELLOW "%s" ANSI_COLOR_RESET ".\n", ip_receptor, puerto_receptor);
+    int socket_propio_envio;        // Los números de socket de servidor (escucha) y conexión con el cliente (porque estamos en TCP, así que establecemos un nuevo socket por cada conexión con cada cliente)
     struct sockaddr_in socket_propio, socket_remoto; // Structs que usaremos para almacenar las direcciones de cliente y servidor
-    socklen_t tam_direccion_cliente;
+    socklen_t tamano_sock_receptor;
     ssize_t bytes_enviados;         // Lo usaremos para llevar la cuenta de cuántos bytes hemos enviado
-    int clientes_atendidos = 0;         // Lo usaremos para contar el total de solicitudes contestadas
-    char *mensaje_procesado = NULL; // El mensaje procesado, es decir, el mensaje, pero con la IP del cliente añadida al principio. Esto no se exige en el enunciado de la práctica, pero creo que es buena idea tenerlo.
     char *ip_cliente = NULL;        // Aquí guardaremos la IP del cliente, pero en formato legible por humanos
 
     socket_propio_envio = socket(AF_INET, SOCK_DGRAM, 0);
@@ -32,10 +31,15 @@ int servidor(char *puerto, char *mensaje_enviar, char* ip_receptor)
         perror("Error al crear el socket");
     }
 
-    memset(&socket_propio, 0, sizeof(socket_propio)); // Llenamos la estructura de 0s
-    socket_propio.sin_family = AF_INET;                    // IPv4
-    socket_propio.sin_port = htons(atoi(puerto));          // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
-    socket_propio.sin_addr.s_addr = htonl(INADDR_ANY);     // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
+    memset(&socket_remoto, 0, sizeof(struct sockaddr_in));  // Llenamos la estructura de 0s
+    socket_propio.sin_family = AF_INET;                // IPv4
+    socket_propio.sin_port = htons(atoi(puerto));      // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
+    socket_propio.sin_addr.s_addr = htonl(INADDR_ANY); // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
+
+    memset(&socket_propio, 0, sizeof(struct sockaddr_in));  // Llenamos la estructura de 0s
+    socket_propio.sin_family = AF_INET;                // IPv4
+    socket_propio.sin_port = htons(atoi(puerto));      // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
+    socket_propio.sin_addr.s_addr = htonl(INADDR_ANY); // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
 
     if (bind(socket_propio_envio, (struct sockaddr *)&socket_propio, sizeof(socket_propio)) < 0)
     {
@@ -43,66 +47,24 @@ int servidor(char *puerto, char *mensaje_enviar, char* ip_receptor)
         return (EXIT_FAILURE);
     }
 
-    if (listen(socket_propio_envio, 5) != 0) // Marcamos el socket como pasivo, para que pueda escuchar conexiones de clientes. Se pueden mantener hasta 5 en cola de espera.
+    if (mensaje_enviar == NULL)
     {
-        perror("Error abriendo el socket para escucha");
-        return (EXIT_FAILURE);
+        mensaje_enviar = "Mensaje de prueba";
+        fprintf(stderr, "No se ha especificado un mensaje para enviar las respuestas. Usando \"%s\" como mensaje.", mensaje_enviar);
     }
 
-    tam_direccion_cliente = sizeof(socket_remoto);
+    tamano_sock_receptor = sizeof(socket_remoto);
 
-    while (clientes_atendidos < MAX_CLIENTES_SERV) // Vamos a contestar en total solo 5 solicitudes, este es un valor arbitrario
+    bytes_enviados = sendto(socket_propio_envio, mensaje_enviar, (strlen(mensaje_enviar) + 1)*sizeof(char), 0, (struct sockaddr*) &socket_remoto, tamano_sock_receptor);  // Enviamos usando el socket_propio_envio el mensaje especificado, con su tamaño +1 (para el '\0'), sin flags especificados, al socket remoto que especifica el struct que pasamos
+
+    if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
     {
-
-        socket_receptor = accept(socket_propio_envio, (struct sockaddr *)&socket_remoto, &tam_direccion_cliente);
-
-        if (socket_receptor < 0) // Hubo un error, abortamos
-        {
-            perror("Error aceptando la conexión");
-            close(socket_receptor); // Cerramos los sockets antes de salir
-            close(socket_propio_envio);
-            return (EXIT_FAILURE);
-        }
-
-        if (mensaje_enviar == NULL)
-        {
-            mensaje_enviar = "Mensaje de prueba";
-            fprintf(stderr, "No se ha especificado un mensaje para enviar las respuestas. Usando \"%s\" como mensaje.", mensaje_enviar);
-        }
-
-        ip_cliente = (char *)realloc(ip_cliente, (socket_remoto.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN);
-
-        if (inet_ntop(socket_remoto.sin_family, (void *)&(socket_remoto.sin_addr), ip_cliente, (socket_remoto.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN) == NULL)
-        {
-            close(socket_receptor); // Hubo un error, abortamos. Cerramos los sockets antes de salir
-            close(socket_propio_envio);
-            perror("Error en inet_ntop");
-            return (EXIT_FAILURE);
-        }
-
-        printf("Conectado %s al puerto %d\n", ip_cliente, ntohs(socket_remoto.sin_port)); // Imprimimos la IP del cliente
-
-        mensaje_procesado = (char *)realloc(mensaje_procesado, sizeof(char) * (strlen(ip_cliente) + strlen(": ") + strlen(mensaje_enviar) + 1)); // Reservamos memoria para hacer el mensaje procesado. Reservamos la suma de la longitud de las cadenas (más 1, para el '0' del final).
-        mensaje_procesado = strcat(strcat(strcpy(mensaje_procesado, ip_cliente), ": "), mensaje_enviar);
-        printf("%s\n", mensaje_procesado); // Construimos el mensaje de respuesta de la siguiente forma: "[IP CLIENTE]: [MENSAJE]"
-
-        bytes_enviados = send(socket_receptor, mensaje_procesado, sizeof(char) * (strlen(mensaje_procesado) + 1), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
-
-        if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
-        {
-            perror("Error enviando la respuesta");
-        }
-
-        printf("Enviados %zd bytes: %s\n", bytes_enviados, mensaje_enviar); // Info para el usuario
-
-        close(socket_receptor); // Cerramos el socket para la conexión con el cliente
-
-        clientes_atendidos++; // Incrementamos el contador de clientes atendidos
+        perror("Error enviando la respuesta");
     }
+
+    printf("Enviados %zd bytes: %s\n", bytes_enviados, mensaje_enviar); // Info para el usuario
 
     close(socket_propio_envio); // Cerramos el socket del servidor
-
-    free(mensaje_procesado); // Liberamos memoria
     free(ip_cliente);
 
     return (EXIT_SUCCESS); // Todo fue bien, devolvemos EXIT_SUCCESS
@@ -118,7 +80,7 @@ int cliente(char *puerto, char *direccion)
     struct sockaddr_in direccion_envio; // Esto lo usaremos para conectarnos con el otro host (el servidor). La dirección la sacaremos de los argumentos de la función.
     char mensaje_recibido[MAX_TAM_MSG]; // Aquí guardaremos el mensaje que recibimos
     int error_check;                    // La usaremos para comprobar códigos de error
-    ssize_t bytes_recibidos;                // Lo usaremos para saber la longitud del mensaje recibido
+    ssize_t bytes_recibidos;            // Lo usaremos para saber la longitud del mensaje recibido
 
     socket_servidor = socket(AF_INET, SOCK_STREAM, 0); // Creamos un socket para conectarnos al servidor
 
