@@ -1,4 +1,4 @@
-ARCHS_C := P3_1_cliente.c P3_1_sender.c
+ARCHS_C := P3_1_receptor.c P3_1_sender.c
 
 OUTPUTS := $(ARCHS_C:.c=.out)
 
