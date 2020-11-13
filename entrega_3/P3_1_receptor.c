@@ -10,31 +10,28 @@ int main(int argc, char **argv)
 
     int opt;
     // port: Puerto
-    // direccion: IP del servidor. Solo se usa si soy un cliente
+    // direccion: IP del servidor. Solo se usa si soy un receptor
     // mensaje_enviar: Si soy un servidor, qué mensaje enviarle a los que se me conectan
-    char *port = NULL, *direccion = NULL;
+    char *port = NULL;
 
     // Comprueba que exista al menos un operando
     // En caso de error salimos de la función main con el codigo EXIT_FAILURE
     if (argc < 2)
     {
         printf("Falta un operando\n");
-        printf("Usar: %s [-h dirección del servidor] [-p numero de puerto del servidor]\n", argv[0]);
+        printf("Usar: %s [-p numero de escucha]\n", argv[0]);
         return (EXIT_FAILURE);
     }
 
     // La funcion getopt() permite de forma facil manejar operandos en linea de comandos
     // Las opciones n: s: i: p: indican que esos "flags" (nsip) deben de ir seguidos de un argumento
     // Ese parametro se guarda en la variable externa optarg
-    while ((opt = getopt(argc, argv, "h:p:")) != -1)
+    while ((opt = getopt(argc, argv, "p:")) != -1)
     {
         switch (opt)
         {
         case 'p':
             port = optarg; // Argumento numero de puerto
-            break;
-        case 'h':
-            direccion = optarg; // IP del servidor. Solo se usa si soy un cliente
             break;
         case ':': // Se introdujo un flag sin argumento obligatorio
             fprintf(stderr, "La opción -%c requiere un argumento.\n", optopt);
@@ -56,17 +53,10 @@ int main(int argc, char **argv)
 
     if (port)
     {
-        if (direccion)
+        // Ejecutamos la función de recepción de mensajes, definida en una librería aparte.
+        if (receptor(port) != EXIT_SUCCESS)
         {
-            printf("Este host es un cliente. Vamos a conectarnos al servidor.\n");
-            if (cliente(port, direccion) != EXIT_SUCCESS)
-            {
-                fprintf(stderr, "Error ejecutando cliente\n");
-            }
-        }
-        else
-        {
-            fprintf(stderr, "Es necesario especificar una IP para realizar el envío.\n");
+            fprintf(stderr, "Error ejecutando receptor\n");
         }
     }
     else

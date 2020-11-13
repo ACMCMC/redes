@@ -17,6 +17,6 @@ int sender(char* puerto, char* mensaje_enviar, char* ip_envio, char * puerto_rec
 /*
 Esta función se conecta al servidor con el puerto y la dirección que se le pasan en formato texto, e imprime por pantalla lo que recibe
 */
-int cliente(char* puerto, char* direccion);
+int receptor(char* puerto);
 
 #endif
