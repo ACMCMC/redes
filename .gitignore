@@ -5,4 +5,7 @@
 .vscode/
 *.zip
 *.o
-*
+*.txt
+.DS_Store
+*.pdf
+*.png
