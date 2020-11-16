@@ -1,4 +1,4 @@
-SUBDIRS_ENTREGAS := ./entrega_1 ./entrega_2
+SUBDIRS_ENTREGAS := ./entrega_1 ./entrega_2 ./entrega_3
 
 SUBDIRS_PRACTICAS := ./prac_1
 
