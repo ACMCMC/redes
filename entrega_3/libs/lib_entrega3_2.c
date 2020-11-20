@@ -41,7 +41,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
     {
         file_out[i] = toupper(file[i]);
     }
-    fp_out = fopen("file_out", "w");
+    fp_out = fopen(file_out, "w");
     if (!fp)
     {
         perror("Error abriendo el archivo de escritura. Abortamos.");
