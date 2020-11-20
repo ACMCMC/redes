@@ -21,9 +21,6 @@
 |_______/    |_______||__| \__| |_______/ |_______|| _| `._____|                                                
 */
 
-/*
-Esta función crea un servidor en el puerto_propio indicado, para responder a todos los clientes que se conecten a él con el mensaje que se le pasa como segundo parámetro. Si el segundo parámetro apunta a NULL, entonces se responde con un mensaje genérico
-*/
 int sender(char *puerto_propio, char *mensaje_enviar, char *ip_receptor, char *puerto_receptor)
 {
     printf("Este host es el que envía. Vamos a enviar el mensaje a " ANSI_COLOR_BLUE "%s" ANSI_COLOR_RESET ":" ANSI_COLOR_CYAN "%s" ANSI_COLOR_RESET ".\n", ip_receptor, puerto_receptor);
@@ -94,9 +91,6 @@ int sender(char *puerto_propio, char *mensaje_enviar, char *ip_receptor, char *p
 
 */
 
-/*
-Esta función se conecta al servidor con el puerto_propio y la dirección que se le pasan en formato texto, e imprime por pantalla lo que recibe
-*/
 int receptor(char *puerto)
 {
 

@@ -16,7 +16,8 @@
 Función que realiza el lado del cliente del apartado 2 de la práctica.
 file: el archivo con los caracteres a enviar
 host: la IP del servidor de mayúsculas
-puerto: el puerto de escucha en el servidor
+puerto_propio: Puerto del cliente (este host)
+puerto_servidor: Puerto del servidor de mayúsculas (al que nos vamos a conectar)
 */
 int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto_servidor)
 {
