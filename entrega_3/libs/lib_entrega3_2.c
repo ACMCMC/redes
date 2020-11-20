@@ -81,7 +81,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
     memset(&direccion_cliente, 0, sizeof(direccion_cliente)); // Llenamos la estructura de 0s
     direccion_cliente.sin_family = AF_INET;                    // IPv4
     direccion_cliente.sin_port = htons(atoi(puerto_propio));          // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
-    direccion_cliente.sin_addr.s_addr = htonl(INADDR_LOOPBACK);     // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
+    direccion_cliente.sin_addr.s_addr = htonl(INADDR_ANY);     // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
 
     if (bind(socket_servidor, (struct sockaddr *)&direccion_cliente, sizeof(direccion_cliente)) < 0)
     {
