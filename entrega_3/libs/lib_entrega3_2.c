@@ -135,16 +135,16 @@ puerto: el puerto en el que queremos escuchar por conexiones entrantes
 */
 int serv_mayusculas(char *puerto)
 {
-    int socket_servidor, socket_conexion, i;                  // Identificadores de los sockets y una variable auxiliar i
+    int socket_servidor;                                      // Identificador del socket en el que vamos a estar a la escucha de conexiones
+    int i;                                                    // Variable auxiliar
     ssize_t bytes_recibidos, bytes_enviados;                  // Lo guardaremos para llevar información de contabilidad, lo imprimiremos por consola
-    int num_clientes = 0;                                     // El número de clientes que son atendidos
     struct sockaddr_in direccion_servidor, direccion_cliente; // Aquí guardamos las direcciones tanto de cliente como servidor
     socklen_t tam_direccion_cliente;                          // Aquí guardaremos el tamaño de la dirección del cliente, que será de entrada y salida a accept()
     char mensaje_recibido[MAX_TAM_MSG];                       // El mensaje en minúsculas
     char mensaje_procesado[MAX_TAM_MSG];                      // El mensaje en mayúsculas
     char *ip_cliente = NULL;                                  // La IP del cliente en formato humano
 
-    socket_servidor = socket(AF_INET, SOCK_STREAM, 0); // Creamos el socket de escucha de conexiones
+    socket_servidor = socket(AF_INET, SOCK_DGRAM, 0); // Creamos el socket de escucha de conexiones
     if (socket_servidor < 0)
     {
         perror("Error al crear el socket");
@@ -162,71 +162,53 @@ int serv_mayusculas(char *puerto)
         return (EXIT_FAILURE);
     }
 
-    if (listen(socket_servidor, 5) != 0) // Marcamos el socket como pasivo, para que pueda escuchar conexiones de clientes. Se pueden mantener hasta 5 en cola de espera.
-    {
-        perror("Error abriendo el socket para escucha");
-        close(socket_servidor);
-        return (EXIT_FAILURE);
-    }
+    printf("Listo para recibir datagramas en el puerto %s\n", puerto);
 
     tam_direccion_cliente = sizeof(struct sockaddr_in); // Parámetro de entrada a accept()
 
-    while (num_clientes < MAX_CLIENTES_SERV) // Vamos a contestar en total solo 5 clientes, este es un valor arbitrario
+    while (1) // Vamos a contestar en total solo 5 clientes, este es un valor arbitrario
     {
-
-        socket_conexion = accept(socket_servidor, (struct sockaddr *)&direccion_cliente, &tam_direccion_cliente); // socket_servidor es el identificador del socket donde escuchamos conexiones, &direccion_cliente es un puntero a un struct sockaddr donde guardaremos la dirección del cliente que se conecta, &tam_direccion_cliente es un parámetro de entrada y salida a la función que nos indica (como entrada) el tamaño de la estructura direccion_cliente (es un sockaddr_in), y que como salida nos indica el tamaño que se ha consumido realmente
-
-        if (socket_conexion < 0) // Hubo un error, abortamos
-        {
-            perror("Error aceptando la conexión");
-            close(socket_conexion); // Cerramos los sockets antes de salir
-            close(socket_servidor);
-            return (EXIT_FAILURE);
-        }
-
-        ip_cliente = (char *)realloc(ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN);                                                               // Guardamos espacio para la IP del cliente en formato texto
-        if (inet_ntop(direccion_cliente.sin_family, (void *)&(direccion_cliente.sin_addr), ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN) == NULL) // Convertimos la IP del cliente a formato texto
-        {
-            close(socket_conexion); // Hubo un error, abortamos. Cerramos los sockets antes de salir
-            close(socket_servidor);
-            perror("Error en inet_ntop");
-            return (EXIT_FAILURE);
-        }
-        printf("Conectado el cliente %s al puerto %d\n", ip_cliente, ntohs(direccion_cliente.sin_port)); // Mensaje por consola
-
-        while ((bytes_recibidos = recv(socket_conexion, mensaje_recibido, sizeof(char) * MAX_TAM_MSG, 0)) > 0)
-        {
-
-            for (i = 0; i < (int)strnlen(mensaje_recibido, MAX_TAM_MSG); i++) // Pasamos el mensaje a mayúsculas
-            {
-                mensaje_procesado[i] = toupper(mensaje_recibido[i]);
-            }
-            mensaje_procesado[i] = '\0'; // Introducimos el terminador de cadena en el mensaje procesado
-
-            bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * (strnlen(mensaje_procesado, MAX_TAM_MSG) + 1), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
-
-            if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
-            {
-                perror("Error enviando la respuesta");
-            }
-
-            printf("Enviados %zd bytes: %s\n", bytes_enviados, mensaje_procesado); // Info para el usuario
-        }
+        bytes_recibidos = recvfrom(socket_servidor, mensaje_recibido, sizeof(mensaje_recibido), 0, (struct sockaddr *)&direccion_cliente, &tam_direccion_cliente);
+        // Nos quedamos esperando a recibir un datagrama de cualquier cliente. Esto lo hacemos con recvfrom(), que acepta como parámetros:
+        // el número del socket que hemos abierto para recibir mensajes
+        // puntero al mensaje en sí
+        // el tamaño máximo del mensaje
+        // 0, porque no queremos especificar ningún flag en especial
+        // puntero a un struct donde guardaremos información sobre el host que nos ha mandado el mensaje
+        // el tamaño de ese struct, como entrada; es también un parámetro de salida que nos indicará el tamaño tras la recepción
 
         if (bytes_recibidos < 0)
         {
             perror("Hubo un error al recibir el mensaje.");
         }
 
-        close(socket_conexion); // Cerramos el socket para la conexión con el cliente
+        ip_cliente = (char *)realloc(ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN);                                                               // Guardamos espacio para la IP del cliente en formato texto
+        if (inet_ntop(direccion_cliente.sin_family, (void *)&(direccion_cliente.sin_addr), ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN) == NULL) // Convertimos la IP del cliente a formato texto
+        {
+            close(socket_servidor); // Hubo un error, abortamos. Cerramos los sockets antes de salir
+            perror("Error en inet_ntop");
+            return (EXIT_FAILURE);
+        }
 
-        printf("Fin de la conexión.\n\n");
+        printf("Recibidos %zd bytes de %s: %s\n", bytes_recibidos, ip_cliente, mensaje_recibido); // Info para el usuario
 
-        num_clientes++;
+        for (i = 0; i < (int)strnlen(mensaje_recibido, MAX_TAM_MSG); i++) // Pasamos el mensaje a mayúsculas
+        {
+            mensaje_procesado[i] = toupper(mensaje_recibido[i]);
+        }
+        mensaje_procesado[i] = '\0'; // Introducimos el terminador de cadena en el mensaje procesado
+
+        bytes_enviados = sendto(socket_servidor, mensaje_procesado, sizeof(char) * (strnlen(mensaje_procesado, sizeof(mensaje_procesado)) + 1), 0, (struct sockaddr *)&direccion_cliente, tam_direccion_cliente);
+
+        if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
+        {
+            perror("Error enviando la respuesta");
+        }
+
+        printf("Devueltos %zd bytes: %s\n", bytes_enviados, mensaje_procesado); // Info para el usuario
     }
 
     close(socket_servidor); // Cerramos el socket del servidor
-
     free(ip_cliente);
 
     return (EXIT_SUCCESS);

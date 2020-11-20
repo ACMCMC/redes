@@ -1,8 +1,8 @@
-ARCHS_C := P3_1_receptor.c P3_1_sender.c
+ARCHS_C := P3_1_receptor.c P3_1_sender.c P3_cliente_mayusculas.c P3_serv_mayusculas.c
 
 OUTPUTS := $(ARCHS_C:.c=.out)
 
-HEADERS := ./libs/lib_entrega3_1.h
+HEADERS := ./libs/lib_entrega3_1.h ./libs/lib_entrega3_2.h
 HEADERS_DIR := ./libs
 IMPLS_HEADERS := $(HEADERS:.h=.c)
 OBJS_HEADERS := $(HEADERS:.h=.o)
