@@ -65,6 +65,7 @@ int main(int argc, char **argv)
     else
     {
         fprintf(stderr, "Debe especificarse un puerto\n");
+        fprintf(stderr, "Usar: %s [-p, puerto del servidor]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 }

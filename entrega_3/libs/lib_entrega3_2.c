@@ -10,7 +10,6 @@
 #include <stdio.h>
 #include <ctype.h>
 
-#define MAX_CLIENTES_SERV 5
 #define MAX_TAM_MSG 100 // El tamaño máximo del mensaje, tanto en cliente como en servidor
 
 /*
@@ -26,6 +25,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
     unsigned long i;
     ssize_t bytes_enviados, bytes_recibidos;
     struct sockaddr_in direccion_envio;
+    socklen_t tam_direccion;
     char linea[MAX_TAM_MSG], linea_respuesta[MAX_TAM_MSG];
     char *file_out;
 
@@ -49,7 +49,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
     }
     free(file_out);
 
-    socket_servidor = socket(AF_INET, SOCK_STREAM, 0); // Creamos un socket para conectarnos al servidor
+    socket_servidor = socket(AF_INET, SOCK_DGRAM, 0); // Creamos un socket para conectarnos al servidor
     if (socket_servidor < 0)
     {
         perror("Error al crear el socket");
@@ -78,19 +78,17 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
         return (EXIT_FAILURE);
     }
 
-    if (connect(socket_servidor, (struct sockaddr *)&direccion_envio, sizeof(direccion_envio)) != 0) // Nos conectamos al servidor y comprobamos que todo fue correctamente
-    {
-        perror("Error al conectarse al servidor");
-        close(socket_servidor); // Cerramos el socket de conexión al servidor
-        fclose(fp);
-        fclose(fp_out);
-        return (EXIT_FAILURE);
-    }
-
     while (!feof(fp) && (fgets(linea, MAX_TAM_MSG, fp) != NULL))
     { // Repetimos esto mientras queden líneas en el archivo
-
-        bytes_enviados = send(socket_servidor, linea, sizeof(char) * (strnlen(linea, MAX_TAM_MSG) + 1), 0); // Enviamos la línea de texto al servidor. socket_servidor: identificador del socket, linea: la cadena de texto, el tercer parámetro es su longitud, y el 4o es un 0 porque no especificamos flags
+        tam_direccion = sizeof(direccion_envio);
+        bytes_enviados = sendto(socket_servidor, linea, sizeof(char) * (strnlen(linea, MAX_TAM_MSG) + 1), 0, (struct sockaddr *)&direccion_envio, tam_direccion);
+        // Enviamos la línea al servidor de mayúsculas. Parámetros:
+        // socket_servidor: el id del socket que hemos abierto
+        // linea: puntero a la cadena de caracteres que le enviamos
+        // tamaño de la cadena
+        // 0, porque no especificamos flags
+        // puntero al struct que contiene la dirección del servidor
+        // tamaño del struct
 
         if (bytes_enviados < 0) // Hubo un error
         {
@@ -101,7 +99,14 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
             return (EXIT_FAILURE);
         }
 
-        bytes_recibidos = recv(socket_servidor, linea_respuesta, sizeof(char) * MAX_TAM_MSG, 0); // Recibimos el mensaje. socket_servidor: identificador del socket, linea_respuesta: puntero al string donde guardaremos la línea en minúsculas que nos mandó el cliente, y que vamos a convertir a mayúsculas (por eso la llamo línea_respuesta, al principio es la recepción, pero posteriormente esa misma línea pero en mayúsculas va a ser con la que respondamos al cliente), el tercer parámetro es el tamaño máximo del mensaje que podemos guardar en esa cadena, y el 4o es 0 porque no queremos especificar ningún flag
+        bytes_recibidos = recvfrom(socket_servidor, linea_respuesta, sizeof(char) * MAX_TAM_MSG, 0, (struct sockaddr *) &direccion_envio, &tam_direccion);
+        // Recibimos el mensaje. Parámetros:
+        // socket_servidor: identificador del socket
+        // linea_respuesta: puntero al string donde guardaremos la línea en minúsculas que nos mandó el cliente, y que vamos a convertir a mayúsculas (por eso la llamo línea_respuesta, al principio es la recepción, pero posteriormente esa misma línea pero en mayúsculas va a ser con la que respondamos al cliente)
+        // el tercer parámetro es el tamaño máximo del mensaje que podemos guardar en esa cadena
+        // el 4o es 0 porque no queremos especificar ningún flag
+        // el 5o, la dirección del servidor (struct sockaddr *)
+        // el 6o, el tamaño del struct
 
         if (bytes_recibidos < 0) // Miramos si hubo error recibiendo el mensaje
         {
@@ -168,7 +173,7 @@ int serv_mayusculas(char *puerto)
 
     while (1) // Vamos a contestar en total solo 5 clientes, este es un valor arbitrario
     {
-        bytes_recibidos = recvfrom(socket_servidor, mensaje_recibido, sizeof(mensaje_recibido), 0, (struct sockaddr *)&direccion_cliente, &tam_direccion_cliente);
+        bytes_recibidos = recvfrom(socket_servidor, mensaje_recibido, sizeof(char) * MAX_TAM_MSG, 0, (struct sockaddr *)&direccion_cliente, &tam_direccion_cliente);
         // Nos quedamos esperando a recibir un datagrama de cualquier cliente. Esto lo hacemos con recvfrom(), que acepta como parámetros:
         // el número del socket que hemos abierto para recibir mensajes
         // puntero al mensaje en sí
@@ -198,7 +203,7 @@ int serv_mayusculas(char *puerto)
         }
         mensaje_procesado[i] = '\0'; // Introducimos el terminador de cadena en el mensaje procesado
 
-        bytes_enviados = sendto(socket_servidor, mensaje_procesado, sizeof(char) * (strnlen(mensaje_procesado, sizeof(mensaje_procesado)) + 1), 0, (struct sockaddr *)&direccion_cliente, tam_direccion_cliente);
+        bytes_enviados = sendto(socket_servidor, mensaje_procesado, sizeof(char) * (strnlen(mensaje_procesado, sizeof(char) * MAX_TAM_MSG) + 1), 0, (struct sockaddr *)&direccion_cliente, tam_direccion_cliente);
 
         if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
         {

@@ -9,24 +9,25 @@ int main(int argc, char **argv)
 {
 
     int opt;
-    // port: Puerto
+    // puerto_cliente: Puerto del cliente (este host)
+    // puerto_serv: Puerto del servidor de mayúsculas (al que nos vamos a conectar)
     // direccion: IP del servidor
     // arch_enviar: el archivo de líneas de texto a enviarle al servidor
-    char *port = NULL, *direccion = NULL, *arch_enviar = NULL;
+    char *puerto_cliente = NULL, *puerto_serv = NULL, *direccion = NULL, *arch_enviar = NULL;
 
     // Comprueba que exista al menos un operando
     // En caso de error salimos de la función main con el codigo EXIT_FAILURE
     if (argc < 4)
     {
         printf("Falta un operando\n");
-        printf("Usar: %s [-f, nombre del archivo de texto a enviar] [-h, dirección del servidor] [-p, puerto del servidor]\n", argv[0]);
+        printf("Usar: %s [-h, dirección del servidor] [-p, puerto del servidor] [-c, puerto propio del cliente] [-f, nombre del archivo de texto a enviar]\n", argv[0]);
         return (EXIT_FAILURE);
     }
 
     // La funcion getopt() permite de forma facil manejar operandos en linea de comandos
     // Las opciones n: s: i: p: indican que esos "flags" (nsip) deben de ir seguidos de un argumento
     // Ese parametro se guarda en la variable externa optarg
-    while ((opt = getopt(argc, argv, "p:h:f:")) != -1)
+    while ((opt = getopt(argc, argv, "p:c:h:f:")) != -1)
     {
         switch (opt)
         {
@@ -34,7 +35,10 @@ int main(int argc, char **argv)
             arch_enviar = optarg; // El archivo de texto
             break;
         case 'p':
-            port = optarg; // Argumento numero de puerto
+            puerto_serv = optarg; // Argumento numero de puerto del servidor
+            break;
+        case 'c':
+            puerto_cliente = optarg; // Argumento numero de puerto de este host
             break;
         case 'h':
             direccion = optarg; // IP del servidor
@@ -58,9 +62,9 @@ int main(int argc, char **argv)
     printf("\n");
 
     // Llamamos a la función adecuada
-    if (direccion && port && arch_enviar)
+    if (direccion && puerto_serv && puerto_cliente && arch_enviar)
     {
-        if (cliente_mayusculas(arch_enviar, direccion, port) == EXIT_SUCCESS)
+        if (cliente_mayusculas(arch_enviar, direccion, puerto_cliente) == EXIT_SUCCESS)
         {
             exit(EXIT_SUCCESS);
         }
@@ -73,6 +77,7 @@ int main(int argc, char **argv)
     else
     {
         fprintf(stderr, "Argumentos mal especificados.\n");
+        fprintf(stderr, "Usar: %s [-h, dirección del servidor] [-p, puerto del servidor] [-c, puerto propio del cliente] [-f, nombre del archivo de texto a enviar]\n", argv[0]);
         exit(EXIT_FAILURE);
     }
 }
