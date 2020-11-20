@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     // Llamamos a la función adecuada
     if (direccion && puerto_serv && puerto_cliente && arch_enviar)
     {
-        if (cliente_mayusculas(arch_enviar, direccion, puerto_cliente) == EXIT_SUCCESS)
+        if (cliente_mayusculas(arch_enviar, direccion, puerto_cliente, puerto_serv) == EXIT_SUCCESS)
         {
             exit(EXIT_SUCCESS);
         }

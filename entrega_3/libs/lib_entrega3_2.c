@@ -18,13 +18,13 @@ file: el archivo con los caracteres a enviar
 host: la IP del servidor de mayúsculas
 puerto: el puerto de escucha en el servidor
 */
-int cliente_mayusculas(char *file, char *host, char *puerto)
+int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto_servidor)
 {
     FILE *fp, *fp_out;
     int socket_servidor, error_check;
     unsigned long i;
     ssize_t bytes_enviados, bytes_recibidos;
-    struct sockaddr_in direccion_envio;
+    struct sockaddr_in direccion_envio, direccion_cliente;
     socklen_t tam_direccion;
     char linea[MAX_TAM_MSG], linea_respuesta[MAX_TAM_MSG];
     char *file_out;
@@ -41,7 +41,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
     {
         file_out[i] = toupper(file[i]);
     }
-    fp_out = fopen(file_out, "w");
+    fp_out = fopen("file_out", "w");
     if (!fp)
     {
         perror("Error abriendo el archivo de escritura. Abortamos.");
@@ -60,7 +60,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
 
     memset(&direccion_envio, 0, sizeof(direccion_envio)); // La estructura tiene todo 0s
     direccion_envio.sin_family = AF_INET;                 // IPv4
-    direccion_envio.sin_port = htons(atoi(puerto));       // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
+    direccion_envio.sin_port = htons(atoi(puerto_servidor));       // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
 
     if ((error_check = inet_pton(AF_INET, host, &(direccion_envio.sin_addr))) != 1) // Convertimos la ip de formato texto a formato máquina
     {
@@ -77,9 +77,23 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
         close(socket_servidor);
         return (EXIT_FAILURE);
     }
+    
+    memset(&direccion_cliente, 0, sizeof(direccion_cliente)); // Llenamos la estructura de 0s
+    direccion_cliente.sin_family = AF_INET;                    // IPv4
+    direccion_cliente.sin_port = htons(atoi(puerto_propio));          // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
+    direccion_cliente.sin_addr.s_addr = htonl(INADDR_LOOPBACK);     // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
+
+    if (bind(socket_servidor, (struct sockaddr *)&direccion_cliente, sizeof(direccion_cliente)) < 0)
+    {
+        perror("No se ha podido asignar la dirección al socket");
+        close(socket_servidor);
+        return (EXIT_FAILURE);
+    }
+
 
     while (!feof(fp) && (fgets(linea, MAX_TAM_MSG, fp) != NULL))
     { // Repetimos esto mientras queden líneas en el archivo
+    sleep(1);
         tam_direccion = sizeof(direccion_envio);
         bytes_enviados = sendto(socket_servidor, linea, sizeof(char) * (strnlen(linea, MAX_TAM_MSG) + 1), 0, (struct sockaddr *)&direccion_envio, tam_direccion);
         // Enviamos la línea al servidor de mayúsculas. Parámetros:
