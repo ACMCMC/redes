@@ -29,6 +29,11 @@ int sender(char *puerto_propio, char *mensaje_enviar, char *ip_receptor, char *p
     socklen_t tamano_sock_receptor;
     ssize_t bytes_enviados; // Lo usaremos para llevar la cuenta de cuántos bytes hemos enviado
 
+    float array[10] = {0.5, 1.5, 2.5, 3.5, 4.5, 5.5, 6.5, 7.5, 8.5, 9.5};
+    int num_enviar;
+    printf("Cuántos datos quieres enviar? ");
+    scanf(" %d", &num_enviar);
+
     socket_propio_envio = socket(AF_INET, SOCK_DGRAM, 0);
 
     if (socket_propio_envio < 0)
@@ -54,7 +59,7 @@ int sender(char *puerto_propio, char *mensaje_enviar, char *ip_receptor, char *p
     if (mensaje_enviar == NULL)
     {
         mensaje_enviar = "Mensaje de prueba";
-        fprintf(stderr, "No se ha especificado un mensaje para enviar las respuestas. Usando \"%s\" como mensaje.\n", mensaje_enviar);
+        //fprintf(stderr, "No se ha especificado un mensaje para enviar las respuestas. Usando \"%s\" como mensaje.\n", mensaje_enviar);
     }
 
     tamano_sock_receptor = sizeof(socket_receptor);
@@ -66,7 +71,7 @@ int sender(char *puerto_propio, char *mensaje_enviar, char *ip_receptor, char *p
         return (EXIT_FAILURE);
     }
 
-    bytes_enviados = sendto(socket_propio_envio, mensaje_enviar, (strlen(mensaje_enviar) + 1) * sizeof(char), 0, (struct sockaddr *)&socket_receptor, tamano_sock_receptor); // Enviamos usando el socket_propio_envio el mensaje especificado, con su tamaño +1 (para el '\0'), sin flags especificados, al socket remoto que especifica el struct que pasamos
+    bytes_enviados = sendto(socket_propio_envio, array, num_enviar * sizeof(float), 0, (struct sockaddr *)&socket_receptor, tamano_sock_receptor); // Enviamos usando el socket_propio_envio el mensaje especificado, con su tamaño +1 (para el '\0'), sin flags especificados, al socket remoto que especifica el struct que pasamos
 
     if (bytes_enviados < 0) // Hubo un error, abortamos.
     {
@@ -75,7 +80,7 @@ int sender(char *puerto_propio, char *mensaje_enviar, char *ip_receptor, char *p
         return (EXIT_FAILURE);
     }
 
-    printf(ANSI_COLOR_GREEN "Enviados %zd bytes" ANSI_COLOR_RESET ": %s\n", bytes_enviados, mensaje_enviar); // Info para el usuario
+    printf(ANSI_COLOR_GREEN "Enviados %zd bytes" ANSI_COLOR_RESET ".\n", bytes_enviados); // Info para el usuario
 
     close(socket_propio_envio); // Cerramos el socket de envio
     return (EXIT_SUCCESS);      // Todo fue bien, devolvemos EXIT_SUCCESS
@@ -101,6 +106,8 @@ int receptor(char *puerto)
     ssize_t bytes_recibidos;            // Lo usaremos para saber la longitud del mensaje recibido
     char *ip_sender = NULL;
 
+    float array[10];
+
     printf("Este host es el que recibe. Vamos a escuchar en el puerto " ANSI_COLOR_CYAN "%s" ANSI_COLOR_RESET ".\n", puerto);
 
     id_socket_propio = socket(AF_INET, SOCK_DGRAM, 0); // Creamos un socket para escuchar por conexiones
@@ -125,7 +132,7 @@ int receptor(char *puerto)
     memset(&socket_sender, 0, sizeof(struct sockaddr_in)); // Inicializamos la estructura que guardará la dirección del que envía a todo 0s
     tam_socket_sender = sizeof(struct sockaddr_in);        // El tamaño de la estructura que guarda la dirección del que envía. No es realmente necesaria la variable, ya que podríamos poner el valor directamente en recvfrom(), pero creo que es más claro declararlo de forma explícita
 
-    bytes_recibidos = recvfrom(id_socket_propio, mensaje_recibido, sizeof(mensaje_recibido), 0, (struct sockaddr *)&socket_sender, &tam_socket_sender); // Recibimos un mensaje a través del socket que hemos abierto
+    bytes_recibidos = recvfrom(id_socket_propio, array, sizeof(array), 0, (struct sockaddr *)&socket_sender, &tam_socket_sender); // Recibimos un mensaje a través del socket que hemos abierto
 
     close(id_socket_propio); // Cerramos el socket de conexión al servidor
 
@@ -142,7 +149,10 @@ int receptor(char *puerto)
         return (EXIT_FAILURE);
     }
 
-    printf(ANSI_COLOR_GREEN "Recibidos %zd bytes de " ANSI_COLOR_BLUE "%s" ANSI_COLOR_RESET ":" ANSI_COLOR_CYAN "%d" ANSI_COLOR_RESET ": %s\n", bytes_recibidos, ip_sender, ntohs(socket_sender.sin_port), mensaje_recibido); // Imprimimos IP, puerto y mensaje
+    printf(ANSI_COLOR_GREEN "Recibidos %zd bytes de " ANSI_COLOR_BLUE "%s" ANSI_COLOR_RESET ":" ANSI_COLOR_CYAN "%d" ANSI_COLOR_RESET ":\n", bytes_recibidos, ip_sender, ntohs(socket_sender.sin_port)); // Imprimimos IP, puerto y mensaje
+    for (unsigned long i = 0; i < (bytes_recibidos/sizeof(float)); i++) {
+        printf("%f\n", array[i]);
+    }
 
     free(ip_sender); // Liberamos el string de la IP del que envía
 
