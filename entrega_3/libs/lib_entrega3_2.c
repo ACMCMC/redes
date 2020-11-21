@@ -13,6 +13,13 @@
 #define MAX_TAM_MSG 100 // El tamaño máximo del mensaje, tanto en cliente como en servidor
 
 /*
+  ______  __       __   _______ .__   __. .___________. _______ 
+ /      ||  |     |  | |   ____||  \ |  | |           ||   ____|
+|  ,----'|  |     |  | |  |__   |   \|  | `---|  |----`|  |__   
+|  |     |  |     |  | |   __|  |  . `  |     |  |     |   __|  
+|  `----.|  `----.|  | |  |____ |  |\   |     |  |     |  |____ 
+ \______||_______||__| |_______||__| \__|     |__|     |_______|
+                                                                
 Función que realiza el lado del cliente del apartado 2 de la práctica.
 file: el archivo con los caracteres a enviar
 host: la IP del servidor de mayúsculas
@@ -150,6 +157,13 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
 }
 
 /*
+     _______. _______ .______     ____    ____  __   _______   ______   .______      
+    /       ||   ____||   _  \    \   \  /   / |  | |       \ /  __  \  |   _  \     
+   |   (----`|  |__   |  |_)  |    \   \/   /  |  | |  .--.  |  |  |  | |  |_)  |    
+    \   \    |   __|  |      /      \      /   |  | |  |  |  |  |  |  | |      /     
+.----)   |   |  |____ |  |\  \----.  \    /    |  | |  '--'  |  `--'  | |  |\  \----.
+|_______/    |_______|| _| `._____|   \__/     |__| |_______/ \______/  | _| `._____|
+                                                                                     
 Función que realiza el lado del servidor del apartado 2 de la práctica.
 puerto: el puerto en el que queremos escuchar por conexiones entrantes
 */
