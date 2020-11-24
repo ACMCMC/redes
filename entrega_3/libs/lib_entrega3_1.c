@@ -19,6 +19,12 @@
     \   \    |   __|  |  . `  | |  |  |  ||   __|  |      /     
 .----)   |   |  |____ |  |\   | |  '--'  ||  |____ |  |\  \----.
 |_______/    |_______||__| \__| |_______/ |_______|| _| `._____|                                                
+
+Realiza el funcionamiento del host que envía un mensaje por UDP
+    puerto: el puerto desde el que enviamos el datagrama
+    mensaje_enviar: el string que queremos enviar (si no lo especificamos, se envía uno por defecto)
+    ip_envio: la dirección IP del host al que queremos enviar el datagrama
+    puerto_receptor: el puerto donde escucha por datagramas entrantes el host que recibe
 */
 
 int sender(char *puerto_propio, char *mensaje_enviar, char *ip_receptor, char *puerto_receptor)
@@ -86,6 +92,8 @@ int sender(char *puerto_propio, char *mensaje_enviar, char *ip_receptor, char *p
 |  |\  \----.|  |____ |  `----.|  |____ |  |          |  |     |  `--'  | |  |\  \----.
 | _| `._____||_______| \______||_______|| _|          |__|      \______/  | _| `._____|
 
+Realiza el funcionamiento del host que recibe un mensaje por UDP
+    puerto: el puerto donde escuchamos por datagramas entrantes
 */
 
 int receptor(char *puerto)

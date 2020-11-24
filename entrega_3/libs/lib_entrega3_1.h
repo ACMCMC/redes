@@ -9,10 +9,17 @@
 #define ANSI_COLOR_CYAN    "\x1b[36m"
 #define ANSI_COLOR_RESET   "\x1b[0m"
 
-
+/* Realiza el funcionamiento del host que envía un mensaje por UDP
+ * puerto: el puerto desde el que enviamos el datagrama
+ * mensaje_enviar: el string que queremos enviar (si no lo especificamos, se envía uno por defecto)
+ * ip_envio: la dirección IP del host al que queremos enviar el datagrama
+ * puerto_receptor: el puerto donde escucha por datagramas entrantes el host que recibe
+ */
 int sender(char* puerto, char* mensaje_enviar, char* ip_envio, char * puerto_receptor);
 
-
+/* Realiza el funcionamiento del host que recibe un mensaje por UDP
+ * puerto: el puerto donde escuchamos por datagramas entrantes
+ */
 int receptor(char* puerto);
 
 #endif
