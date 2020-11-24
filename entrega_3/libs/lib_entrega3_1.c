@@ -23,10 +23,11 @@
 
 int sender(char *puerto_propio, char *mensaje_enviar, char *ip_receptor, char *puerto_receptor)
 {
-    printf("Este host es el que envía. Vamos a enviar el mensaje a " ANSI_COLOR_BLUE "%s" ANSI_COLOR_RESET ":" ANSI_COLOR_CYAN "%s" ANSI_COLOR_RESET ".\n", ip_receptor, puerto_receptor);
     int socket_propio_envio;                           // El número del socket que vamos a abrir para realizar el envío
     struct sockaddr_in socket_propio, socket_receptor; // Structs que usaremos para almacenar las direcciones de sender y receptor
     ssize_t bytes_enviados;                            // Lo usaremos para llevar la cuenta de cuántos bytes hemos enviado
+
+    printf("Este host es el que envía. Vamos a enviar el mensaje a " ANSI_COLOR_BLUE "%s" ANSI_COLOR_RESET ":" ANSI_COLOR_CYAN "%s" ANSI_COLOR_RESET ".\n", ip_receptor, puerto_receptor);
 
     socket_propio_envio = socket(AF_INET, SOCK_DGRAM, 0); // Abrimos el socket
     if (socket_propio_envio < 0)                          // Comprobamos si hubo error
@@ -92,14 +93,14 @@ int receptor(char *puerto)
 
     int id_socket_propio;                            // El número de socket que escuchará conexiones
     struct sockaddr_in socket_sender, socket_propio; // socket_sender guardará la dirección del que envía el mensaje; socket_propio guarda la del socket de este host
-    socklen_t tam_socket_sender;
-    char mensaje_recibido[MAX_TAM_MSG]; // Aquí guardaremos el mensaje que recibimos
-    ssize_t bytes_recibidos;            // Lo usaremos para saber la longitud del mensaje recibido
-    char *ip_sender = NULL;
+    socklen_t tam_socket_sender;                     // Parámetro de entrada y salida a recvfrom()
+    char mensaje_recibido[MAX_TAM_MSG];              // Aquí guardaremos el mensaje que recibimos
+    ssize_t bytes_recibidos;                         // Lo usaremos para saber la longitud del mensaje recibido
+    char *ip_sender = NULL;                          // Para guardar la IP del que envía el mensaje como cadena de caraceteres y mostrarla al usuario
 
     printf("Este host es el que recibe. Vamos a escuchar en el puerto " ANSI_COLOR_CYAN "%s" ANSI_COLOR_RESET ".\n", puerto);
 
-    id_socket_propio = socket(AF_INET, SOCK_DGRAM, 0); // Creamos un socket para escuchar por conexiones
+    id_socket_propio = socket(AF_INET, SOCK_DGRAM, 0); // Creamos un socket para escuchar por conexiones entrantes
 
     if (id_socket_propio < 0)
     {
@@ -112,7 +113,7 @@ int receptor(char *puerto)
     socket_propio.sin_port = htons(atoi(puerto));          // El puerto de escucha
     socket_propio.sin_addr.s_addr = INADDR_ANY;            // Escuchamos por cualquier interfaz
 
-    if (bind(id_socket_propio, (struct sockaddr *)&socket_propio, sizeof(socket_propio)) < 0) // Asignamos el puerto que elegimos arriba al socket que declaramos antes también
+    if (bind(id_socket_propio, (struct sockaddr *)&socket_propio, sizeof(socket_propio)) < 0) // Asignamos el puerto que nos pasaron como argumento al socket que declaramos antes
     {
         perror("No se ha podido asignar la dirección al socket");
         return (EXIT_FAILURE);
@@ -121,7 +122,13 @@ int receptor(char *puerto)
     memset(&socket_sender, 0, sizeof(struct sockaddr_in)); // Inicializamos la estructura que guardará la dirección del que envía a todo 0s
     tam_socket_sender = sizeof(struct sockaddr_in);        // El tamaño de la estructura que guarda la dirección del que envía. No es realmente necesaria la variable, ya que podríamos poner el valor directamente en recvfrom(), pero creo que es más claro declararlo de forma explícita
 
-    bytes_recibidos = recvfrom(id_socket_propio, mensaje_recibido, sizeof(mensaje_recibido), 0, (struct sockaddr *)&socket_sender, &tam_socket_sender); // Recibimos un mensaje a través del socket que hemos abierto
+    bytes_recibidos = recvfrom(id_socket_propio, mensaje_recibido, sizeof(mensaje_recibido), 0, (struct sockaddr *)&socket_sender, &tam_socket_sender); // Recibimos un mensaje a través del socket que hemos abierto, con los parámetros:
+    // id_socket_propio: la ID del socket donde recibimos el mensaje (el que abrimos antes)
+    // mensaje_recibido: puntero al buffer donde guardamos el mensaje
+    // sizeof(mensaje_recibido): el tamaño del buffer
+    // 0: no queremos especificar flags
+    // &socket_sender: puntero a un struct para guardar la dirección del que envía
+    // &tam_socket_sender: parámetro de entrada (tamaño del struct cuando lo pasamos a la función) y de salida (tamaño del struct que nos devuelve)
 
     close(id_socket_propio); // Cerramos el socket de conexión al servidor
 
