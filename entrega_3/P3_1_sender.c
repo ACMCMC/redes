@@ -10,8 +10,9 @@ int main(int argc, char **argv)
 
     int opt;
     // puerto_propio: Puerto donde montar el socket de envío
-    // ip_receptor: IP del receptor
     // mensaje_enviar: Es opcional, si se especifica, se enviará este mensaje
+    // puerto_receptor: Puerto donde montar el socket de envío
+    // ip_receptor: IP del receptor
     char *puerto_propio = NULL, *mensaje_enviar = NULL, *puerto_receptor = NULL, *ip_receptor = NULL;
 
     // Comprueba que exista al menos un operando

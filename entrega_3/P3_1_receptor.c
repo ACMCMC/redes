@@ -9,9 +9,7 @@ int main(int argc, char **argv)
 {
 
     int opt;
-    // port: Puerto
-    // direccion: IP del servidor. Solo se usa si soy un receptor
-    // mensaje_enviar: Si soy un servidor, qué mensaje enviarle a los que se me conectan
+    // port: Puerto en el que escuchamos por datagramas entrantes
     char *port = NULL;
 
     // Comprueba que exista al menos un operando
@@ -53,7 +51,7 @@ int main(int argc, char **argv)
 
     if (port)
     {
-        // Ejecutamos la función de recepción de mensajes, definida en una librería aparte.
+        // Ejecutamos la función de recepción de datagramas, definida en una librería aparte.
         if (receptor(port) != EXIT_SUCCESS)
         {
             fprintf(stderr, "Error ejecutando receptor\n");

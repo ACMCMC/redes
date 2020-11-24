@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     if (argc < 4)
     {
         printf("Falta un operando\n");
-        printf("Usar: %s [-h, dirección del servidor] [-p, puerto del servidor] [-c, puerto propio del cliente] [-f, nombre del archivo de texto a enviar]\n", argv[0]);
+        printf("Usar: %s [-c, puerto propio del cliente] [-h, dirección del servidor] [-p, puerto del servidor] [-f, nombre del archivo de texto a enviar]\n", argv[0]);
         return (EXIT_FAILURE);
     }
 

@@ -9,7 +9,7 @@ int main(int argc, char **argv)
 {
 
     int opt;
-    // port: Puerto
+    // port: Puerto de escucha por datagramas entrantes
     char *port = NULL;
 
     // Comprueba que exista al menos un operando
