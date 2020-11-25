@@ -44,18 +44,19 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
         return (EXIT_FAILURE);
     }
 
-    file_out = (char *)malloc(sizeof(char) * (strlen(file) + 1));
+    file_out = (char *)malloc(sizeof(char) * (strlen(file) + 1)); // Convertimos el nombre de archivo de entrada a mayúsculas; ése será el archivo de salida
     for (i = 0; i <= strlen(file); i++)
     {
         file_out[i] = toupper(file[i]);
     }
-    fp_out = fopen(file_out, "w");
+
+    fp_out = fopen(file_out, "w"); // Abrimos el archivo de salida, que tiene el nombre en mayúsculas que acabamos de generar
     if (!fp)
     {
         perror("Error abriendo el archivo de escritura. Abortamos.");
         return (EXIT_FAILURE);
     }
-    free(file_out);
+    free(file_out); // Ya no necesitamos el nombre del archivo de salida, porque lo hemos abierto, así que liberamos su memoria
 
     socket_servidor = socket(AF_INET, SOCK_DGRAM, 0); // Creamos un socket para conectarnos al servidor
     if (socket_servidor < 0)
@@ -91,7 +92,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
     direccion_cliente.sin_port = htons(atoi(puerto_propio));          // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
     direccion_cliente.sin_addr.s_addr = htonl(INADDR_ANY);     // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
 
-    if (bind(socket_servidor, (struct sockaddr *)&direccion_cliente, sizeof(direccion_cliente)) < 0)
+    if (bind(socket_servidor, (struct sockaddr *)&direccion_cliente, sizeof(direccion_cliente)) < 0) // Asignamos una dirección al socket (se suele decir que "asginamos un nombre al socket")
     {
         perror("No se ha podido asignar la dirección al socket");
         close(socket_servidor);
@@ -101,8 +102,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
 
     while (!feof(fp) && (fgets(linea, MAX_TAM_MSG, fp) != NULL))
     { // Repetimos esto mientras queden líneas en el archivo
-    sleep(1);
-        tam_direccion = sizeof(direccion_envio);
+        tam_direccion = sizeof(direccion_envio); // No debería cambiar
         bytes_enviados = sendto(socket_servidor, linea, sizeof(char) * (strnlen(linea, MAX_TAM_MSG) + 1), 0, (struct sockaddr *)&direccion_envio, tam_direccion);
         // Enviamos la línea al servidor de mayúsculas. Parámetros:
         // socket_servidor: el id del socket que hemos abierto
@@ -110,7 +110,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
         // tamaño de la cadena
         // 0, porque no especificamos flags
         // puntero al struct que contiene la dirección del servidor
-        // tamaño del struct
+        // tamaño de ese struct
 
         if (bytes_enviados < 0) // Hubo un error
         {
@@ -128,13 +128,13 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
         // el tercer parámetro es el tamaño máximo del mensaje que podemos guardar en esa cadena
         // el 4o es 0 porque no queremos especificar ningún flag
         // el 5o, la dirección del servidor (struct sockaddr *)
-        // el 6o, el tamaño del struct
+        // el 6o, el tamaño del struct, también es parámetro de salida
 
         if (bytes_recibidos < 0) // Miramos si hubo error recibiendo el mensaje
         {
             perror("Error al recibir el mensaje");
             close(socket_servidor); // Cerramos el socket de conexión al servidor
-            fclose(fp);
+            fclose(fp); // Cerramos los archivos
             fclose(fp_out);
             return (EXIT_FAILURE);
         }
@@ -146,7 +146,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
             linea[strnlen(linea, MAX_TAM_MSG) - 1] = '\0';
             linea_respuesta[strnlen(linea_respuesta, MAX_TAM_MSG) - 1] = '\0';
         }
-        printf("\nEnviados %zd bytes: %s.\n\tRecibidos %zd bytes: %s\n", bytes_enviados, linea, bytes_recibidos, linea_respuesta); // Imprimimos los mensajes por consola
+        printf("\nEnviados" ANSI_COLOR_BLUE " %zd bytes" ANSI_COLOR_RESET ": %s.\n\tRecibidos " ANSI_COLOR_BLUE "%zd bytes" ANSI_COLOR_RESET ": %s\n", bytes_enviados, linea, bytes_recibidos, linea_respuesta); // Imprimimos los mensajes por consola
     }
 
     close(socket_servidor); // Cerramos el socket del servidor y los archivos
@@ -189,16 +189,16 @@ int serv_mayusculas(char *puerto)
     direccion_servidor.sin_port = htons(atoi(puerto));          // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
     direccion_servidor.sin_addr.s_addr = htonl(INADDR_ANY);     // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
 
-    if (bind(socket_servidor, (struct sockaddr *)&direccion_servidor, sizeof(direccion_servidor)) < 0)
+    if (bind(socket_servidor, (struct sockaddr *)&direccion_servidor, sizeof(direccion_servidor)) < 0) // "asignamos un nombre al socket"
     {
         perror("No se ha podido asignar la dirección al socket");
         close(socket_servidor);
         return (EXIT_FAILURE);
     }
 
-    printf("Listo para recibir datagramas en el puerto %s\n", puerto);
+    printf("Listo para recibir datagramas en el puerto " ANSI_COLOR_BLUE "%s" ANSI_COLOR_RESET "\n", puerto);
 
-    tam_direccion_cliente = sizeof(struct sockaddr_in); // Parámetro de entrada a accept()
+    tam_direccion_cliente = sizeof(struct sockaddr_in); // Parámetro de entrada a recvfrom()
 
     while (1) // Vamos a contestar en total solo 5 clientes, este es un valor arbitrario
     {
@@ -219,12 +219,12 @@ int serv_mayusculas(char *puerto)
         ip_cliente = (char *)realloc(ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN);                                                               // Guardamos espacio para la IP del cliente en formato texto
         if (inet_ntop(direccion_cliente.sin_family, (void *)&(direccion_cliente.sin_addr), ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN) == NULL) // Convertimos la IP del cliente a formato texto
         {
-            close(socket_servidor); // Hubo un error, abortamos. Cerramos los sockets antes de salir
+            close(socket_servidor); // Hubo un error, abortamos. Cerramos el socket antes de salir
             perror("Error en inet_ntop");
             return (EXIT_FAILURE);
         }
 
-        printf("Recibidos %zd bytes de %s: %s\n", bytes_recibidos, ip_cliente, mensaje_recibido); // Info para el usuario
+        printf("Recibidos " ANSI_COLOR_BLUE "%zd bytes" ANSI_COLOR_RESET " de " ANSI_COLOR_BLUE "%s" ANSI_COLOR_RESET ":" ANSI_COLOR_CYAN "%d" ANSI_COLOR_RESET ": %s\n", bytes_recibidos, ip_cliente, ntohs(direccion_cliente.sin_port), mensaje_recibido); // Info para el usuario
 
         for (i = 0; i < (int)strnlen(mensaje_recibido, MAX_TAM_MSG); i++) // Pasamos el mensaje a mayúsculas
         {
@@ -233,6 +233,13 @@ int serv_mayusculas(char *puerto)
         mensaje_procesado[i] = '\0'; // Introducimos el terminador de cadena en el mensaje procesado
 
         bytes_enviados = sendto(socket_servidor, mensaje_procesado, sizeof(char) * (strnlen(mensaje_procesado, sizeof(char) * MAX_TAM_MSG) + 1), 0, (struct sockaddr *)&direccion_cliente, tam_direccion_cliente);
+        // Enviamos la línea convertida al cliente. Parámetros:
+        // socket_servidor: el id del socket que hemos abierto
+        // mensaje_procesado: puntero a la cadena de caracteres que le enviamos
+        // el tamaño de la cadena
+        // 0, porque no especificamos flags
+        // puntero al struct que contiene la dirección del cliente
+        // tamaño de ese struct
 
         if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
         {
