@@ -17,7 +17,7 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         printf("Falta un operando\n");
-        printf("Usar: %s [-p numero de escucha]\n", argv[0]);
+        printf("Usar: %s [-p puerto de escucha]\n", argv[0]);
         return (EXIT_FAILURE);
     }
 
