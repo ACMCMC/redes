@@ -26,7 +26,7 @@ host: la IP del servidor de mayúsculas
 puerto_propio: Puerto del cliente (este host)
 puerto_servidor: Puerto del servidor de mayúsculas (al que nos vamos a conectar)
 */
-int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto_servidor)
+int cliente_mayusculas(char *file, char *host, char *puerto_propio, char *puerto_servidor)
 {
     FILE *fp, *fp_out;
     int socket_servidor, error_check;
@@ -67,9 +67,9 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
         return (EXIT_FAILURE);
     }
 
-    memset(&direccion_envio, 0, sizeof(direccion_envio)); // La estructura tiene todo 0s
-    direccion_envio.sin_family = AF_INET;                 // IPv4
-    direccion_envio.sin_port = htons(atoi(puerto_servidor));       // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
+    memset(&direccion_envio, 0, sizeof(direccion_envio));    // La estructura tiene todo 0s
+    direccion_envio.sin_family = AF_INET;                    // IPv4
+    direccion_envio.sin_port = htons(atoi(puerto_servidor)); // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
 
     if ((error_check = inet_pton(AF_INET, host, &(direccion_envio.sin_addr))) != 1) // Convertimos la ip de formato texto a formato máquina
     {
@@ -86,11 +86,11 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
         close(socket_servidor);
         return (EXIT_FAILURE);
     }
-    
+
     memset(&direccion_cliente, 0, sizeof(direccion_cliente)); // Llenamos la estructura de 0s
-    direccion_cliente.sin_family = AF_INET;                    // IPv4
-    direccion_cliente.sin_port = htons(atoi(puerto_propio));          // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
-    direccion_cliente.sin_addr.s_addr = htonl(INADDR_ANY);     // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
+    direccion_cliente.sin_family = AF_INET;                   // IPv4
+    direccion_cliente.sin_port = htons(atoi(puerto_propio));  // El puerto estaba como una cadena de caracteres ASCII, lo convertimos a entero y en orden de red
+    direccion_cliente.sin_addr.s_addr = htonl(INADDR_ANY);    // En el caso del servidor debe ponerse INADDR_ANY para que pueda aceptar conexiones a través de cualquiera de las interfaces del mismo
 
     if (bind(socket_servidor, (struct sockaddr *)&direccion_cliente, sizeof(direccion_cliente)) < 0) // Asignamos una dirección al socket (se suele decir que "asginamos un nombre al socket")
     {
@@ -99,9 +99,8 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
         return (EXIT_FAILURE);
     }
 
-
     while (!feof(fp) && (fgets(linea, MAX_TAM_MSG, fp) != NULL))
-    { // Repetimos esto mientras queden líneas en el archivo
+    {                                            // Repetimos esto mientras queden líneas en el archivo
         tam_direccion = sizeof(direccion_envio); // No debería cambiar
         bytes_enviados = sendto(socket_servidor, linea, sizeof(char) * (strnlen(linea, MAX_TAM_MSG) + 1), 0, (struct sockaddr *)&direccion_envio, tam_direccion);
         // Enviamos la línea al servidor de mayúsculas. Parámetros:
@@ -121,7 +120,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
             return (EXIT_FAILURE);
         }
 
-        bytes_recibidos = recvfrom(socket_servidor, linea_respuesta, sizeof(char) * MAX_TAM_MSG, 0, (struct sockaddr *) &direccion_envio, &tam_direccion);
+        bytes_recibidos = recvfrom(socket_servidor, linea_respuesta, sizeof(char) * MAX_TAM_MSG, 0, (struct sockaddr *)&direccion_envio, &tam_direccion);
         // Recibimos el mensaje. Parámetros:
         // socket_servidor: identificador del socket
         // linea_respuesta: puntero al string donde guardaremos la línea en minúsculas que nos mandó el cliente, y que vamos a convertir a mayúsculas (por eso la llamo línea_respuesta, al principio es la recepción, pero posteriormente esa misma línea pero en mayúsculas va a ser con la que respondamos al cliente)
@@ -134,7 +133,7 @@ int cliente_mayusculas(char *file, char *host, char *puerto_propio, char* puerto
         {
             perror("Error al recibir el mensaje");
             close(socket_servidor); // Cerramos el socket de conexión al servidor
-            fclose(fp); // Cerramos los archivos
+            fclose(fp);             // Cerramos los archivos
             fclose(fp_out);
             return (EXIT_FAILURE);
         }

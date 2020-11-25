@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     if (argc < 2)
     {
         printf("Falta un operando\n");
-        printf("Usar: %s [-p numero de puerto_propio propio] [-r numero de puerto_propio del receptor] [-h IP del receptor] [-m el mensaje a enviar]\n", argv[0]);
+        printf("Usar: %s [-p numero de puerto propio del que envía] [-r numero de puerto de escucha del receptor] [-h IP del receptor] [-m el mensaje a enviar]\n", argv[0]);
         return (EXIT_FAILURE);
     }
 
