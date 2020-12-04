@@ -129,6 +129,27 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
     return (EXIT_SUCCESS);
 }
 
+void manejador(int senal)
+{
+    int stat_loc;
+    pid_t pid;
+    printf("Recibido: %s\n", strsignal(senal));
+    pid = wait(&stat_loc); // Leemos el estado del hijo
+    printf("Codigo de salida: %s\n", strsignal(senal));
+    if (!WIFEXITED(stat_loc))
+    {
+        fprintf(stderr, "El proceso %d no ha salido de forma controlada.\n", pid);
+    }
+    else if (WEXITSTATUS(stat_loc) != EXIT_SUCCESS)
+    {
+        fprintf(stderr, "Algo ha ido mal en el proceso %d. Abortando. Código de retorno: %d\n", pid, WEXITSTATUS(stat_loc));
+    }
+    else
+    {
+        printf("El proceso %d ha salico don código de retorno %d\n", pid, WEXITSTATUS(stat_loc));
+    }
+}
+
 /*
 Función que realiza el lado del servidor del apartado 2 de la práctica.
 puerto: el puerto en el que queremos escuchar por conexiones entrantes
@@ -143,11 +164,19 @@ int serv_mayusculas(char *puerto)
     char mensaje_recibido[MAX_TAM_MSG];                       // El mensaje en minúsculas
     char mensaje_procesado[MAX_TAM_MSG];                      // El mensaje en mayúsculas
     char *ip_cliente = NULL;                                  // La IP del cliente en formato humano
+    pid_t pid;                                                // El ID del proceso hijo
+
+    if (signal(SIGCHLD, manejador) == SIG_ERR)
+    { // Vamos a manejar SIGCHLD con manejador
+        perror("Error en signal().");
+        return (EXIT_FAILURE);
+    }
 
     socket_servidor = socket(AF_INET, SOCK_STREAM, 0); // Creamos el socket de escucha de conexiones
     if (socket_servidor < 0)
     {
         perror("Error al crear el socket");
+        return (EXIT_FAILURE);
     }
 
     memset(&direccion_servidor, 0, sizeof(direccion_servidor)); // Llenamos la estructura de 0s
@@ -184,50 +213,68 @@ int serv_mayusculas(char *puerto)
             return (EXIT_FAILURE);
         }
 
-        ip_cliente = (char *)realloc(ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN);                                                               // Guardamos espacio para la IP del cliente en formato texto
-        if (inet_ntop(direccion_cliente.sin_family, (void *)&(direccion_cliente.sin_addr), ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN) == NULL) // Convertimos la IP del cliente a formato texto
+        pid = fork();
+
+        if (pid < 0)
         {
-            close(socket_conexion); // Hubo un error, abortamos. Cerramos los sockets antes de salir
+            perror("Error en fork()");
+            close(socket_conexion); // Cerramos los sockets antes de salir
             close(socket_servidor);
-            perror("Error en inet_ntop");
             return (EXIT_FAILURE);
         }
-        printf("Conectado el cliente %s al puerto %d\n", ip_cliente, ntohs(direccion_cliente.sin_port)); // Mensaje por consola
-
-        while ((bytes_recibidos = recv(socket_conexion, mensaje_recibido, sizeof(char) * MAX_TAM_MSG, 0)) > 0)
-        {
-
-            for (i = 0; i < (int)strnlen(mensaje_recibido, MAX_TAM_MSG); i++) // Pasamos el mensaje a mayúsculas
+        else if (pid == 0)
+        {                                                                                                                                                                                                                          // Este proceso es el hijo
+            ip_cliente = (char *)realloc(ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN);                                                               // Guardamos espacio para la IP del cliente en formato texto
+            if (inet_ntop(direccion_cliente.sin_family, (void *)&(direccion_cliente.sin_addr), ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN) == NULL) // Convertimos la IP del cliente a formato texto
             {
-                mensaje_procesado[i] = toupper(mensaje_recibido[i]);
+                close(socket_conexion); // Hubo un error, abortamos. Cerramos los sockets antes de salir
+                close(socket_servidor);
+                perror("Error en inet_ntop");
+                return (EXIT_FAILURE);
             }
-            mensaje_procesado[i] = '\0'; // Introducimos el terminador de cadena en el mensaje procesado
+            printf("Conectado el cliente %s al puerto %d\n", ip_cliente, ntohs(direccion_cliente.sin_port)); // Mensaje por consola
 
-            bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * (strnlen(mensaje_procesado, MAX_TAM_MSG) + 1), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
-
-            if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
+            while ((bytes_recibidos = recv(socket_conexion, mensaje_recibido, sizeof(char) * MAX_TAM_MSG, 0)) > 0)
             {
-                perror("Error enviando la respuesta");
+
+                for (i = 0; i < (int)strnlen(mensaje_recibido, MAX_TAM_MSG); i++) // Pasamos el mensaje a mayúsculas
+                {
+                    mensaje_procesado[i] = toupper(mensaje_recibido[i]);
+                }
+                mensaje_procesado[i] = '\0'; // Introducimos el terminador de cadena en el mensaje procesado
+
+                bytes_enviados = send(socket_conexion, mensaje_procesado, sizeof(char) * (strnlen(mensaje_procesado, MAX_TAM_MSG) + 1), 0); // Enviamos el mensaje al cliente. El mensaje es la concatenación de la ip en formato texto, ": ", y el mensaje que se pasó como argumento a la función
+
+                if (bytes_enviados < 0) // Hubo un error, pero no abortamos.
+                {
+                    perror("Error enviando la respuesta");
+                }
+
+                printf("Enviados %zd bytes: %s\n", bytes_enviados, mensaje_procesado); // Info para el usuario
             }
 
-            printf("Enviados %zd bytes: %s\n", bytes_enviados, mensaje_procesado); // Info para el usuario
+            if (bytes_recibidos < 0)
+            {
+                perror("Hubo un error al recibir el mensaje.");
+            }
+
+            close(socket_conexion); // Cerramos el socket para la conexión con el cliente
+
+            printf("Fin de la conexión.\n\n");
+
+            free(ip_cliente); // No sería necesario, porque el proceso va a acabar ahora
+
+            exit(EXIT_SUCCESS); // El proceso hijo acaba aquí
         }
-
-        if (bytes_recibidos < 0)
-        {
-            perror("Hubo un error al recibir el mensaje.");
+        else
+        { // Este proceso es el padre
+            printf("El proceso hijo tiene ID: %d\n", pid);
         }
-
-        close(socket_conexion); // Cerramos el socket para la conexión con el cliente
-
-        printf("Fin de la conexión.\n\n");
 
         num_clientes++;
     }
 
     close(socket_servidor); // Cerramos el socket del servidor
-
-    free(ip_cliente);
 
     return (EXIT_SUCCESS);
 }
