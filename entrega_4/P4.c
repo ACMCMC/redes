@@ -14,6 +14,8 @@
 #define ANSI_COLOR_CYAN "\x1b[36m"
 #define ANSI_COLOR_RESET "\x1b[0m"
 
+#define LONG_ADDR_CON_PREFIJO (INET_ADDRSTRLEN + 3)
+
 // Aldán Creo Mariño, Redes, 2020/21
 
 int determinarInterfaz(char *file, char *ip);
@@ -22,7 +24,8 @@ int main(int argc, char **argv)
 {
 
     int opt;
-    // port: Puerto en el que escuchamos por datagramas entrantes
+    // file: el nombre del archivo de la tabla de reenvío
+    // ip: la dirección IP que escribe el usuario
     char *file = NULL, *ip = NULL;
 
     // Comprueba que exista al menos un operando
@@ -63,7 +66,7 @@ int main(int argc, char **argv)
         }
     }
 
-    if (file && ip)
+    if (file && ip) // Comprobamos que se hayan establecido los dos parámetros
     {
         if (determinarInterfaz(file, ip) != EXIT_SUCCESS)
         {
@@ -73,69 +76,83 @@ int main(int argc, char **argv)
     else
     {
         fprintf(stderr, "Falta algún parámetro requerido.\n");
+        fprintf(stderr, "Usar: %s [-f tabla de reenvio] [-h dirección IP del host]\n", argv[0]);
     }
 }
 
 int determinarInterfaz(char *file, char *ip)
 {
-    FILE *fp;
-    struct in_addr ipUsuario;
-    struct in_addr redActual;
-    struct in_addr mejorRed;
-    char entradaActualTabla[50];
-    char redIp[INET_ADDRSTRLEN];
-    char red[INET_ADDRSTRLEN];
-    int prefijo;
-    int mejorPrefijo = 0;
-    int interfazActual;
-    int mejorInterfaz = 0;
+    FILE *fp;                          // Puntero al archivo de la tabla de reenvío
+    struct in_addr ipUsuario;          // La IP que escribe el usuario, pero en formato binario
+    struct in_addr redActual;          // La red que estamos leyendo de la tabla de reenvío, en formato binario
+    struct in_addr mejorRed;           // La mejor red para el reenvío, será la solución global al final
+    char entradaActualTabla[50];       // Una entrada de la tabla. He elegido un tamaño arbitrario, aunque se podría ajustar bastante más
+    char redIp[LONG_ADDR_CON_PREFIJO]; // La parte de red de la IP que escribió el usuario, truncada según el sufijo de la red con que la que la estemos comparando
+    char red[LONG_ADDR_CON_PREFIJO];   // La red que estamos leyendo de la tabla de reenvío, en formato presentación
+    int prefijo;                       // El prefijo de la red que estamos leyendo de la tabla de reenvío
+    int mejorPrefijo = 0;              // El mejor prefijo global, en principio será 0, y se modificará cuando encontremos una concidencia
+    int interfazActual;                // La interfaz que estamos leyendo de la tabla de reenvío
+    int mejorInterfaz = 0;             // La mejor interfaz, por defecto será 0
 
-    fp = fopen(file, "r");
+    fp = fopen(file, "r"); // Abrimos el archivo que especificó el usuario
     if (!fp)
     {
         fprintf(stderr, "Error abriendo el archivo.\n");
         return EXIT_FAILURE;
     }
 
-    if (inet_pton(AF_INET, ip, &ipUsuario) != 1)
+    if (inet_pton(AF_INET, "0.0.0.0", &mejorRed) != 1) // Inicializamos mejorRed a 0
     {
         fprintf(stderr, "Error en inet_pton.\n");
         return EXIT_FAILURE;
     }
 
-    while (!feof(fp))
+    if (inet_pton(AF_INET, ip, &ipUsuario) != 1) // Convertimos la red que pasó el usuario a formato binario
     {
-        fscanf(fp, " %[^,] , %d", entradaActualTabla, &interfazActual);
+        fprintf(stderr, "Error en inet_pton.\n");
+        return EXIT_FAILURE;
+    }
 
-        prefijo = inet_net_pton(AF_INET, entradaActualTabla, &redActual, sizeof(struct in_addr)); // Convertimos la entrada de la tabla
+    while (!feof(fp)) // Vamos leyendo toda la tabla de reenvío
+    {
+        fscanf(fp, " %[^,] , %d", entradaActualTabla, &interfazActual); // Leemos una línea de la tabla
+
+        prefijo = inet_net_pton(AF_INET, entradaActualTabla, &redActual, sizeof(struct in_addr)); // Convertimos la entrada de la tabla a formato binario; nos quedamos con el prefijo
         if (prefijo < 0)
         { // Hubo un error
             fprintf(stderr, "Error en inet_net_pton.\n");
             return EXIT_FAILURE;
         }
 
-        if (!inet_net_ntop(AF_INET, &redActual, prefijo, red, INET_ADDRSTRLEN)) {
-            fprintf(stderr, "Error en inet_net_ntop.\n");
-            return EXIT_FAILURE;
-        }
-        if (!inet_net_ntop(AF_INET, &ipUsuario, prefijo, redIp, INET_ADDRSTRLEN)) {
-            fprintf(stderr, "Error en inet_net_ntop.\n");
-            return EXIT_FAILURE;
-        }
+        if (prefijo > mejorPrefijo)
+        { // Sólo comprobamos esta entrada de la tabla si la red tiene un prefijo mayor (si no lo es, la solución sería peor)
+            if (!inet_net_ntop(AF_INET, &redActual, prefijo, red, LONG_ADDR_CON_PREFIJO))
+            { // Convertimos la dirección de red a formato presentación, esto es para que por ejemplo si una entrada de la tabla es "0.0.0.0/0, entonces se convierta a 0/0". Así podremos compararla con la IP del usuario, ya que tendrán el mismo formato
+                fprintf(stderr, "Error en inet_net_ntop.\n");
+                return EXIT_FAILURE;
+            }
+            if (!inet_net_ntop(AF_INET, &ipUsuario, prefijo, redIp, LONG_ADDR_CON_PREFIJO))
+            { // Convertimos la IP guardada en binario a formato presentación, pero aquí la truncamos al prefijo de la red con que la comparamos, por lo que si la IP está dentro de la red entonces serán la misma cadena de caracteres.
+                fprintf(stderr, "Error en inet_net_ntop.\n");
+                return EXIT_FAILURE;
+            }
 
-        if ((strncmp( red, redIp, INET_ADDRSTRLEN)==0) && (prefijo > mejorPrefijo)) {
-            mejorRed = redActual;
-            mejorPrefijo = prefijo;
-            mejorInterfaz = interfazActual;
+            if (strncmp(red, redIp, LONG_ADDR_CON_PREFIJO) == 0)
+            { // Comparamos si la IP está dentro de la red; si lo está, nos quedamos con esta como solución (al menos por ahora).
+                mejorRed = redActual;
+                mejorPrefijo = prefijo;
+                mejorInterfaz = interfazActual;
+            }
         }
     }
 
-        if (!inet_net_ntop(AF_INET, &mejorRed, mejorPrefijo, red, INET_ADDRSTRLEN)) {
-            fprintf(stderr, "Error en inet_net_ntop.\n");
-            return EXIT_FAILURE;
-        }
+    if (!inet_net_ntop(AF_INET, &mejorRed, mejorPrefijo, red, LONG_ADDR_CON_PREFIJO))
+    { // Convertimos la mejor red a formato presentación
+        fprintf(stderr, "Error en inet_net_ntop.\n");
+        return EXIT_FAILURE;
+    }
 
-    printf("Interfaz: " ANSI_COLOR_BLUE "%d" ANSI_COLOR_RESET "\nRed: " ANSI_COLOR_YELLOW "%s" ANSI_COLOR_RESET "\n", mejorInterfaz, red);
+    printf("Interfaz: " ANSI_COLOR_BLUE "%d" ANSI_COLOR_RESET "\nRed: " ANSI_COLOR_YELLOW "%s" ANSI_COLOR_RESET "\n", mejorInterfaz, red); // Información para el usuario
 
     return EXIT_SUCCESS;
 }
