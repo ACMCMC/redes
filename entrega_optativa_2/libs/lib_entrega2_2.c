@@ -90,6 +90,8 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
     while (!feof(fp) && (fgets(linea, MAX_TAM_MSG, fp) != NULL))
     { // Repetimos esto mientras queden líneas en el archivo
 
+        sleep(2); // "Para probarlo, el cliente debe tener en el lazo donde se van leyendo las líneas del archivo, un sleep para que dé tiempo a lanzar otros clientes en otras terminales."
+
         bytes_enviados = send(socket_servidor, linea, sizeof(char) * (strnlen(linea, MAX_TAM_MSG) + 1), 0); // Enviamos la línea de texto al servidor. socket_servidor: identificador del socket, linea: la cadena de texto, el tercer parámetro es su longitud, y el 4o es un 0 porque no especificamos flags
 
         if (bytes_enviados < 0) // Hubo un error
@@ -129,24 +131,23 @@ int cliente_mayusculas(char *file, char *host, char *puerto)
     return (EXIT_SUCCESS);
 }
 
+// Cuando se recibe SIGCHLD, se ejecuta esta rutina. Muestra el código de retorno del proceso hijo.
 void manejador(int senal)
 {
     int stat_loc;
     pid_t pid;
-    printf("Recibido: %s\n", strsignal(senal));
     pid = wait(&stat_loc); // Leemos el estado del hijo
-    printf("Codigo de salida: %s\n", strsignal(senal));
     if (!WIFEXITED(stat_loc))
     {
         fprintf(stderr, "El proceso %d no ha salido de forma controlada.\n", pid);
     }
     else if (WEXITSTATUS(stat_loc) != EXIT_SUCCESS)
     {
-        fprintf(stderr, "Algo ha ido mal en el proceso %d. Abortando. Código de retorno: %d\n", pid, WEXITSTATUS(stat_loc));
+        fprintf(stderr, "Algo ha ido mal en el proceso %d. Código de retorno: %d.\n", pid, WEXITSTATUS(stat_loc));
     }
     else
     {
-        printf("El proceso %d ha salico don código de retorno %d\n", pid, WEXITSTATUS(stat_loc));
+        printf("El proceso %d ha salido con código de retorno EXIT_SUCCESS.\n", pid);
     }
 }
 
@@ -213,17 +214,17 @@ int serv_mayusculas(char *puerto)
             return (EXIT_FAILURE);
         }
 
-        pid = fork();
+        pid = fork(); // Creamos un proceso hijo para manejar la conexión
 
-        if (pid < 0)
+        if (pid < 0) // Hubo un error
         {
             perror("Error en fork()");
             close(socket_conexion); // Cerramos los sockets antes de salir
             close(socket_servidor);
             return (EXIT_FAILURE);
         }
-        else if (pid == 0)
-        {                                                                                                                                                                                                                          // Este proceso es el hijo
+        else if (pid == 0) // Este proceso es el hijo
+        {
             ip_cliente = (char *)realloc(ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN);                                                               // Guardamos espacio para la IP del cliente en formato texto
             if (inet_ntop(direccion_cliente.sin_family, (void *)&(direccion_cliente.sin_addr), ip_cliente, (direccion_cliente.sin_family == AF_INET6) ? sizeof(char) * INET6_ADDRSTRLEN : sizeof(char) * INET_ADDRSTRLEN) == NULL) // Convertimos la IP del cliente a formato texto
             {
